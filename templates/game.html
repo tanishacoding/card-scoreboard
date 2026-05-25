@@ -35,11 +35,12 @@
       <tr><td>0</td><td>+10 pts</td><td>+0 pts</td></tr>
       <tr><td>1</td><td>+15 pts</td><td>+0 pts</td></tr>
       <tr><td>2</td><td>+20 pts</td><td>+0 pts</td></tr>
-      <tr><td>3</td><td>+25 pts</td><td>+0 pts</td></tr>
-      <tr><td>N</td><td>+10 + N×5 pts</td><td>+0 pts</td></tr>
+      <tr><td>3</td><td>+30 pts</td><td>+0 pts</td></tr>
+      <tr><td>4</td><td>+40 pts</td><td>+0 pts</td></tr>
+      <tr><td>N (≥2)</td><td>+10 + N×10 pts</td><td>+0 pts</td></tr>
     </tbody>
   </table>
-  <p class="judgement-hint">Click <strong>next round</strong> after each round to enter predictions & results.</p>
+  <p class="judgement-hint">Click <strong>next round →</strong> after each round to enter predictions & results. The <strong>dealer</strong> (last player) cannot make total predictions equal cards dealt.</p>
 </div>
 {% endif %}
 
@@ -50,6 +51,7 @@
 <div class="action-bar">
   <button class="btn" onclick="nextRound()">next round →</button>
   <button class="btn" onclick="resetScores()">reset scores</button>
+  <button class="btn btn-end" onclick="endGame()">🏆 end game</button>
 </div>
 
 <!-- Judgement modal -->
@@ -60,6 +62,18 @@
     <div class="modal-actions">
       <button class="btn" onclick="closeJudgementModal()">cancel</button>
       <button class="btn btn-primary" onclick="submitJudgement()">save scores</button>
+    </div>
+  </div>
+</div>
+
+<!-- End game modal -->
+<div id="endgame-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:100; align-items:center; justify-content:center;">
+  <div class="modal-box endgame-modal-box">
+    <h2 class="endgame-title">🏆 final results</h2>
+    <div id="endgame-body"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeEndGame()">close</button>
+      <button class="btn btn-danger" onclick="closeEndGame(); resetScores()">play again</button>
     </div>
   </div>
 </div>

@@ -123,3 +123,21 @@ body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg);
 .endgame-rank { font-size: 22px; min-width: 32px; }
 .endgame-name { flex: 1; font-size: 16px; font-weight: 600; text-align: left; }
 .endgame-score { font-size: 16px; font-weight: 700; color: var(--green); }
+
+/* Dealer rule & cards row */
+.judgement-cards-row { display: flex; align-items: center; gap: 10px; padding: 10px 0 14px; border-bottom: 1px solid var(--border); margin-bottom: 10px; flex-wrap: wrap; }
+.cards-label { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; min-width: 160px; }
+.dealer-note { font-size: 11px; color: var(--muted); width: 100%; }
+.dealer-badge { display: inline-block; background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; border-radius: 20px; font-size: 10px; font-weight: 600; padding: 1px 8px; margin-left: 6px; }
+.dealer-warning { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; margin-top: 10px; font-weight: 500; }
+
+/* End game */
+.btn-end { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+.btn-end:hover { background: #16213e; }
+.endgame-modal-box { text-align: center; min-width: 300px; }
+.endgame-title { font-size: 20px; font-weight: 700; margin-bottom: 1.25rem; }
+.endgame-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 8px; background: var(--bg); border: 1px solid var(--border); }
+.winner-row { background: #fffbeb; border-color: #fcd34d; }
+.endgame-rank { font-size: 22px; min-width: 32px; }
+.endgame-name { flex: 1; font-size: 16px; font-weight: 600; text-align: left; }
+.endgame-score { font-size: 16px; font-weight: 700; color: var(--green); }
