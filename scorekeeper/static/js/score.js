@@ -200,36 +200,3 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') addPlayer();
   });
 });
-
-// ── End Game ──────────────────────────────────────────────────────────────────
-
-function endGame() {
-  const cards = [...document.querySelectorAll('.player-card')];
-  if (cards.length === 0) return;
-
-  const results = cards.map(card => ({
-    name: card.querySelector('.player-name').textContent,
-    score: parseInt(card.querySelector('.player-score').textContent),
-  }));
-
-  // Sort by score (highest first, or lowest first if that's the win condition)
-  results.sort((a, b) => WIN_CONDITION === 'lowest' ? a.score - b.score : b.score - a.score);
-
-  const medals = ['🥇', '🥈', '🥉'];
-  const modal = document.getElementById('endgame-modal');
-  const body = document.getElementById('endgame-body');
-
-  body.innerHTML = results.map((p, i) => `
-    <div class="endgame-row ${i === 0 ? 'winner-row' : ''}">
-      <span class="endgame-rank">${medals[i] || `#${i + 1}`}</span>
-      <span class="endgame-name">${p.name}</span>
-      <span class="endgame-score">${p.score} pts</span>
-    </div>
-  `).join('');
-
-  modal.style.display = 'flex';
-}
-
-function closeEndGame() {
-  document.getElementById('endgame-modal').style.display = 'none';
-}
