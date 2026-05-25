@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,12 +8,27 @@
 </head>
 <body>
   <nav class="navbar">
-    <a href="/" class="nav-brand">🃏 scorekeeper</a>
+    <a href="/" class="nav-brand">🃏 score<span>keeper</span></a>
+    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙 dark mode</button>
   </nav>
   <main class="container">
     {% block content %}{% endblock %}
   </main>
   <script src="{{ url_for('static', filename='js/score.js') }}"></script>
+  <script>
+    // Dark mode — persists across pages
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('theme-btn').textContent = savedTheme === 'dark' ? '☀️ light mode' : '🌙 dark mode';
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      document.getElementById('theme-btn').textContent = next === 'dark' ? '☀️ light mode' : '🌙 dark mode';
+    }
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
