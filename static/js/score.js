@@ -6,6 +6,8 @@ function judgementPoints(predicted) {
   return 10 + predicted * 10;
 }
 
+let currentDealerId = null;
+
 function openJudgementModal(round) {
   const players = [...document.querySelectorAll('.player-card')];
   if (players.length === 0) return;
@@ -14,74 +16,108 @@ function openJudgementModal(round) {
   const body = document.getElementById('judgement-body');
   document.getElementById('judgement-title').textContent = `round ${round} — predictions & results`;
 
-  // Ask for cards distributed this round
+  // Build player id list for dealer selector
+  const playerOptions = players.map(card => {
+    const id = card.id.replace('player-', '');
+    const name = card.querySelector('.player-name').textContent;
+    return `<option value="${id}">${name}</option>`;
+  }).join('');
+
+  // Default dealer = last player (or previously selected)
+  const defaultDealerId = currentDealerId || players[players.length - 1].id.replace('player-', '');
+
   body.innerHTML = `
     <div class="judgement-cards-row">
-      <label class="cards-label">cards distributed this round</label>
-      <input type="number" id="cards-distributed" min="1" max="52" value="7" class="judgement-input" />
-      <span class="dealer-note">dealer's prediction will be validated</span>
+      <div class="cards-row-item">
+        <label class="cards-label">cards distributed</label>
+        <input type="number" id="cards-distributed" min="1" max="52" value="7" class="judgement-input" />
+      </div>
+      <div class="cards-row-item">
+        <label class="cards-label">dealer this round</label>
+        <select id="dealer-select" class="dealer-select">
+          ${playerOptions}
+        </select>
+      </div>
     </div>
     <div class="judgement-players" id="judgement-players"></div>
     <div id="dealer-warning" class="dealer-warning" style="display:none;">
-      ⚠️ Total predictions equal cards distributed! The dealer's bid must be different.
+      ⚠️ Cannot save! Total predictions equal cards distributed. Change the dealer's bid.
     </div>
   `;
 
+  // Set default dealer
+  document.getElementById('dealer-select').value = defaultDealerId;
+
   const playersDiv = document.getElementById('judgement-players');
-  playersDiv.innerHTML = players.map((card, idx) => {
-    const id = card.id.replace('player-', '');
-    const name = card.querySelector('.player-name').textContent;
-    const isDealer = idx === players.length - 1;
-    return `
-      <div class="judgement-row">
-        <div class="judgement-name">
-          ${name}
-          ${isDealer ? '<span class="dealer-badge">dealer</span>' : ''}
-        </div>
-        <div class="judgement-inputs">
-          <div class="judgement-input-group">
-            <label>predicted</label>
-            <input type="number" id="pred-${id}" min="0" max="52" value="0" class="judgement-input pred-input" data-player="${id}" data-isdealer="${isDealer}" />
-          </div>
-          <div class="judgement-input-group">
-            <label>actual hands</label>
-            <input type="number" id="actual-${id}" min="0" max="52" value="0" class="judgement-input" />
-          </div>
-          <div class="judgement-pts" id="pts-${id}">+10 pts ✓</div>
-        </div>
-      </div>`;
-  }).join('');
 
-  // Live preview + dealer validation
-  function updateAll() {
-    const cards = parseInt(document.getElementById('cards-distributed').value) || 0;
-    const allPredInputs = [...document.querySelectorAll('.pred-input')];
-    const total = allPredInputs.reduce((sum, inp) => sum + (parseInt(inp.value) || 0), 0);
-    const dealerInput = allPredInputs[allPredInputs.length - 1];
-    const dealerPred = parseInt(dealerInput.value) || 0;
+  function renderPlayerRows() {
+    const dealerId = document.getElementById('dealer-select').value;
+    currentDealerId = dealerId;
 
-    // Show dealer warning
-    const warning = document.getElementById('dealer-warning');
-    warning.style.display = total === cards ? 'block' : 'none';
-
-    // Update points preview per player
-    players.forEach(card => {
+    playersDiv.innerHTML = players.map(card => {
       const id = card.id.replace('player-', '');
-      const pred = parseInt(document.getElementById(`pred-${id}`).value) || 0;
-      const actual = parseInt(document.getElementById(`actual-${id}`).value) || 0;
-      const pts = pred === actual ? judgementPoints(pred) : 0;
-      const ptsEl = document.getElementById(`pts-${id}`);
-      ptsEl.textContent = pred === actual ? `+${pts} pts ✓` : `+0 pts ✗`;
-      ptsEl.style.color = pred === actual ? '#1D9E75' : '#E24B4A';
-    });
+      const name = card.querySelector('.player-name').textContent;
+      const isDealer = id === dealerId;
+      return `
+        <div class="judgement-row">
+          <div class="judgement-name">
+            ${name}
+            ${isDealer ? '<span class="dealer-badge">🃏 dealer</span>' : ''}
+          </div>
+          <div class="judgement-inputs">
+            <div class="judgement-input-group">
+              <label>predicted</label>
+              <input type="number" id="pred-${id}" min="0" max="52" value="0" class="judgement-input pred-input" data-id="${id}" />
+            </div>
+            <div class="judgement-input-group">
+              <label>actual hands</label>
+              <input type="number" id="actual-${id}" min="0" max="52" value="0" class="judgement-input" data-id="${id}" />
+            </div>
+            <div class="judgement-pts" id="pts-${id}">+10 pts ✓</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    attachInputListeners();
   }
 
-  document.getElementById('cards-distributed').addEventListener('input', updateAll);
-  document.querySelectorAll('.pred-input, .judgement-input').forEach(inp => {
-    inp.addEventListener('input', updateAll);
-  });
-  updateAll();
+  function attachInputListeners() {
+    function updateAll() {
+      const cards = parseInt(document.getElementById('cards-distributed').value) || 0;
+      const dealerId = document.getElementById('dealer-select').value;
+      const allPredInputs = [...document.querySelectorAll('.pred-input')];
+      const total = allPredInputs.reduce((sum, inp) => sum + (parseInt(inp.value) || 0), 0);
 
+      // Dealer warning
+      const warning = document.getElementById('dealer-warning');
+      warning.style.display = total === cards ? 'block' : 'none';
+
+      // Points preview
+      players.forEach(card => {
+        const id = card.id.replace('player-', '');
+        const predEl = document.getElementById(`pred-${id}`);
+        const actualEl = document.getElementById(`actual-${id}`);
+        const ptsEl = document.getElementById(`pts-${id}`);
+        if (!predEl || !actualEl || !ptsEl) return;
+        const pred = parseInt(predEl.value) || 0;
+        const actual = parseInt(actualEl.value) || 0;
+        const pts = pred === actual ? judgementPoints(pred) : 0;
+        ptsEl.textContent = pred === actual ? `+${pts} pts ✓` : `+0 pts ✗`;
+        ptsEl.style.color = pred === actual ? '#1D9E75' : '#E24B4A';
+      });
+    }
+
+    document.getElementById('cards-distributed').addEventListener('input', updateAll);
+    document.querySelectorAll('.pred-input, .judgement-input').forEach(inp => {
+      inp.addEventListener('input', updateAll);
+    });
+    updateAll();
+  }
+
+  // Re-render rows when dealer changes
+  document.getElementById('dealer-select').addEventListener('change', renderPlayerRows);
+
+  renderPlayerRows();
   modal.style.display = 'flex';
 }
 
@@ -91,10 +127,10 @@ async function submitJudgement() {
   const allPredInputs = [...document.querySelectorAll('.pred-input')];
   const total = allPredInputs.reduce((sum, inp) => sum + (parseInt(inp.value) || 0), 0);
 
-  // Block submission if dealer rule violated
   if (total === cards) {
-    document.getElementById('dealer-warning').style.display = 'block';
-    document.getElementById('dealer-warning').textContent = '⚠️ Cannot save! Total predictions equal cards distributed. Change the dealer\'s bid.';
+    const warning = document.getElementById('dealer-warning');
+    warning.style.display = 'block';
+    warning.textContent = `⚠️ Cannot save! Total predictions (${total}) equal cards distributed (${cards}). Change the dealer's bid.`;
     return;
   }
 
@@ -146,9 +182,7 @@ function endGame() {
   results.sort((a, b) => WIN_CONDITION === 'lowest' ? a.score - b.score : b.score - a.score);
 
   const medals = ['🥇', '🥈', '🥉'];
-  const body = document.getElementById('endgame-body');
-
-  body.innerHTML = results.map((p, i) => `
+  document.getElementById('endgame-body').innerHTML = results.map((p, i) => `
     <div class="endgame-row ${i === 0 ? 'winner-row' : ''}">
       <span class="endgame-rank">${medals[i] || `#${i + 1}`}</span>
       <span class="endgame-name">${p.name}</span>
