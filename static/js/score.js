@@ -1,9 +1,9 @@
 // ── Judgement scoring ─────────────────────────────────────────────────────────
-// 0 → +10, 1 → +15, N>=2 → +10 + N*10. Wrong → +0 pts.
+// 0 → +10, 1 → +15, N>=2 → N*10. Wrong → +0 pts.
 function judgementPoints(predicted) {
   if (predicted === 0) return 10;
   if (predicted === 1) return 15;
-  return 10 + predicted * 10;
+  return predicted * 10;
 }
 
 let currentDealerId = null;
