@@ -182,7 +182,7 @@ const WIN_COND = gameEl.dataset.winCondition;
 const TARGET = parseInt(gameEl.dataset.target);
 const DEFAULT_PTS = parseInt(gameEl.dataset.defaultPoints);
 const ALLOW_NEG = gameEl.dataset.allowNegatives === 'true';
-const IS_JUDGEMENT = document.title.toLowerCase().includes('judgement');
+const IS_JUDGEMENT = {{ 'true' if game.name | lower == 'judgement' else 'false' }};
 
 const BG_COLORS = ['#dde0e8','#dde4de','#e4dde4','#e4e0da','#dde8e4','#e8dde0','#e0e4e8','#e8e8de'];
 const TC_COLORS = ['#4a5070','#4a6b50','#6a4a6a','#6a5a40','#3a6a60','#6a3a48','#3a5068','#5a5a38'];
