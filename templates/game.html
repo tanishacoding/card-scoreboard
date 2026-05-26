@@ -39,6 +39,9 @@
 </div>
 
 {% if game.name | lower == 'judgement' %}
+<button class="judgement-cta" onclick="openJudgementModal(parseInt(document.getElementById('roundNum').textContent))">
+  🃏 Enter Round <span id="ctaRound">1</span> Predictions & Results
+</button>
 <div class="judgement-info-card">
   <div class="ji-title">🃏 Judgement scoring</div>
   <div class="ji-pills">
@@ -468,12 +471,14 @@ document.querySelectorAll('.player-row').forEach(initDragForRow);
 
 // ── Round & Reset ──────────────────────────────────────────
 async function nextRound() {
-  // Save scores before round for summary
   getPlayers().forEach(p => { lastRoundScores[p.id] = p.score; });
   const res = await fetch(`/api/games/${GAME_ID}/next-round`, { method: 'POST' });
   const data = await res.json();
   document.getElementById('roundNum').textContent = data.round;
+  const ctaRound = document.getElementById('ctaRound');
+  if (ctaRound) ctaRound.textContent = data.round;
   if (IS_JUDGEMENT) {
+    // Open predictions for the NEW round
     openJudgementModal(data.round);
   } else {
     showRoundSummary(data.round - 1);
@@ -726,6 +731,7 @@ function showToast(msg) {
 document.addEventListener('DOMContentLoaded', () => {
   updateBarsAndRanks();
   updatePodium();
+
 });
 
 document.getElementById('playerName').addEventListener('keydown', e => {

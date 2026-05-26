@@ -581,3 +581,23 @@ body {
 
 /* ── Copy results btn ────────────────────────────────────── */
 .jm-actions .btn{font-size:13px;}
+
+/* ── Judgement CTA button ─────────────────────────────────── */
+.judgement-cta {
+  display: block;
+  width: calc(100% - 2rem);
+  margin: 0 1rem 1rem;
+  padding: 16px;
+  background: var(--accent-bg, #e1f5ee);
+  border: 1.5px solid var(--green, #1D9E75);
+  border-radius: var(--radius);
+  color: var(--green-text, #085041);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+  transition: background 0.15s, transform 0.1s;
+}
+.judgement-cta:hover { background: #c8eede; transform: translateY(-1px); }
+.judgement-cta:active { transform: translateY(0); }
