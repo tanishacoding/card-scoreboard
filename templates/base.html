@@ -1,34 +1,27 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}Scorekeeper{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
   <nav class="navbar">
-    <a href="/" class="nav-brand">🃏 score<span>keeper</span></a>
-    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙 dark mode</button>
+    <a href="/" class="nav-brand">
+      <span class="brand-icon">♟</span>
+      <span class="brand-text">Scorekeeper</span>
+    </a>
+    <div class="nav-meta">{% block nav_meta %}{% endblock %}</div>
   </nav>
-  <main class="container">
+
+  <main class="main-content">
     {% block content %}{% endblock %}
   </main>
-  <script src="{{ url_for('static', filename='js/score.js') }}"></script>
-  <script>
-    // Dark mode — persists across pages
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    document.getElementById('theme-btn').textContent = savedTheme === 'dark' ? '☀️ light mode' : '🌙 dark mode';
 
-    function toggleTheme() {
-      const current = document.documentElement.getAttribute('data-theme');
-      const next = current === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem('theme', next);
-      document.getElementById('theme-btn').textContent = next === 'dark' ? '☀️ light mode' : '🌙 dark mode';
-    }
-  </script>
+  <script src="{{ url_for('static', filename='js/score.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

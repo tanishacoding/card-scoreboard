@@ -1,89 +1,405 @@
 {% extends "base.html" %}
 {% block title %}{{ game.name }} — Scorekeeper{% endblock %}
 
+{% block nav_meta %}
+<span class="round-pill">Round <span id="roundNum">{{ game.current_round }}</span></span>
+{% endblock %}
+
 {% block content %}
-<div class="page-header">
+<div id="gameData"
+  data-game-id="{{ game.id }}"
+  data-win-condition="{{ game.win_condition }}"
+  data-target="{{ game.target_score }}"
+  data-default-points="{{ game.default_points }}"
+  data-allow-negatives="{{ game.allow_negatives | lower }}">
+</div>
+
+<!-- Header -->
+<div class="game-header">
   <div>
-    <h1>{{ game.name }}</h1>
-    <p class="subtitle">
-      {{ game.win_condition }} wins
-      {% if game.win_condition == 'target' %} · target: {{ game.target_score }} pts{% endif %}
-      · <span id="round-display">round 1</span>
-    </p>
+    <h1 class="game-title">{{ game.name }}</h1>
+    <div class="game-meta-row">
+      <span class="meta-chip">
+        {% if game.win_condition == 'highest' %}🏆 Highest wins
+        {% elif game.win_condition == 'lowest' %}🎯 Lowest wins
+        {% elif game.win_condition == 'target' %}🎯 Target: {{ game.target_score }}
+        {% else %}📊 No winner
+        {% endif %}
+      </span>
+      <span class="meta-chip" id="playerCountChip">{{ game.players | length }} player{{ 's' if game.players | length != 1 }}</span>
+    </div>
   </div>
-  <a href="/" class="btn btn-sm">← all games</a>
-</div>
-
-<div id="winner-banner" class="winner-banner" style="display:none;">
-  <span id="winner-text"></span>
-</div>
-
-<div class="card">
-  <h2>add player</h2>
-  <div class="inline-form">
-    <input type="text" id="player-name" placeholder="player name..." maxlength="80" />
-    <button class="btn btn-primary" onclick="addPlayer()">add</button>
+  <div class="game-actions">
+    <button class="btn btn--ghost btn--sm" onclick="nextRound()">Next Round →</button>
+    <button class="btn btn--ghost btn--sm" onclick="resetScores()">↺ Reset</button>
   </div>
 </div>
 
-{% if game.name | lower == 'judgement' %}
-<div class="card judgement-info-card">
-  <h2>🃏 judgement scoring</h2>
-  <table class="scoring-table">
-    <thead><tr><th>predicted hands</th><th>if correct</th><th>if wrong</th></tr></thead>
-    <tbody>
-      <tr><td>0</td><td>+10 pts</td><td>+0 pts</td></tr>
-      <tr><td>1</td><td>+15 pts</td><td>+0 pts</td></tr>
-      <tr><td>2</td><td>+20 pts</td><td>+0 pts</td></tr>
-      <tr><td>3</td><td>+30 pts</td><td>+0 pts</td></tr>
-      <tr><td>4</td><td>+40 pts</td><td>+0 pts</td></tr>
-      <tr><td>N (≥2)</td><td>N×10 pts</td><td>+0 pts</td></tr>
-    </tbody>
-  </table>
-  <p class="judgement-hint">Click <strong>next round →</strong> after each round to enter predictions & results. The <strong>dealer</strong> (last player) cannot make total predictions equal cards dealt.</p>
+<!-- Podium -->
+<section class="section" id="podiumSection" style="display:none">
+  <span class="section-label">Standings</span>
+  <div class="podium" id="podium"></div>
+</section>
+
+<!-- Add Player -->
+<section class="section">
+  <span class="section-label">Players</span>
+  <div class="add-player-row">
+    <input class="field-input" type="text" id="playerName" placeholder="Player name" />
+    <button class="btn btn--primary btn--sm" onclick="addPlayer()">+ Add</button>
+  </div>
+</section>
+
+<!-- Player List -->
+<div class="players-list" id="playersList">
+  {% set avatar_colors = [
+    ('#dde0e8','#4a5070'),('#dde4de','#4a6b50'),('#e4dde4','#6a4a6a'),
+    ('#e4e0da','#6a5a40'),('#dde8e4','#3a6a60'),('#e8dde0','#6a3a48'),
+    ('#e0e4e8','#3a5068'),('#e8e8de','#5a5a38')
+  ] %}
+  {% for p in game.players %}
+  {% set ci = loop.index0 % 8 %}
+  <div class="player-row" id="player-{{ p.id }}" data-score="{{ p.score }}" data-color-bg="{{ avatar_colors[ci][0] }}" data-color-tc="{{ avatar_colors[ci][1] }}">
+    <div class="player-row__left">
+      <div class="player-avatar" style="background:{{ avatar_colors[ci][0] }};color:{{ avatar_colors[ci][1] }}">{{ p.name[0].upper() }}</div>
+      <div class="player-row__info">
+        <span class="player-name">{{ p.name }}</span>
+        <span class="player-history" id="hist-{{ p.id }}">
+          {% for e in p.history %}
+          <span class="hist-chip {% if e.change > 0 %}hist-chip--pos{% elif e.change < 0 %}hist-chip--neg{% endif %}">
+            {{ '+' if e.change > 0 }}{{ e.change }}
+          </span>
+          {% endfor %}
+        </span>
+      </div>
+    </div>
+    <div class="player-row__right">
+      <div class="player-row__score-wrap">
+        <span class="rank-badge" id="rank-{{ p.id }}">#{{ loop.index }}</span>
+        <span class="score-num" id="score-{{ p.id }}">{{ p.score }}</span>
+        <span class="score-label">pts</span>
+      </div>
+      <div class="score-btns">
+        <button class="score-btn score-btn--minus" onclick="changeScore({{ p.id }}, -{{ game.default_points }})">−{{ game.default_points }}</button>
+        <button class="score-btn score-btn--plus" onclick="changeScore({{ p.id }}, {{ game.default_points }})">+{{ game.default_points }}</button>
+        <button class="score-btn score-btn--custom" onclick="openSheet({{ p.id }})">⋯</button>
+      </div>
+    </div>
+    <div class="player-bar-wrap">
+      <div class="player-bar" id="bar-{{ p.id }}" style="width:0%"></div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if not game.players %}
+<div class="empty-state" id="emptyState">
+  <div class="empty-state__icon">👆</div>
+  <p>Add players above to get started!</p>
 </div>
 {% endif %}
 
-<div id="players-grid" class="players-grid">
-  <p class="empty-state">add players above to start tracking scores</p>
-</div>
-
-<div class="action-bar">
-  <button class="btn" onclick="nextRound()">next round →</button>
-  <button class="btn" onclick="resetScores()">reset scores</button>
-  <button class="btn btn-end" onclick="endGame()">🏆 end game</button>
-</div>
-
-<!-- Judgement modal -->
-<div id="judgement-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; align-items:center; justify-content:center;">
-  <div class="modal-box">
-    <h2 id="judgement-title">enter round results</h2>
-    <div id="judgement-body"></div>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeJudgementModal()">cancel</button>
-      <button class="btn btn-primary" onclick="submitJudgement()">save scores</button>
+<!-- Bottom Sheet -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()">
+  <div class="bottom-sheet" id="bottomSheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-avatar" id="sheetAvatar"></div>
+      <div>
+        <div class="sheet-name" id="sheetName"></div>
+        <div class="sheet-score-line" id="sheetScoreLine"></div>
+      </div>
+      <button class="sheet-remove" id="sheetRemove">Remove player</button>
     </div>
+    <div class="quick-grid">
+      <button class="quick-btn quick-btn--neg" onclick="sheetChange(-50)">−50</button>
+      <button class="quick-btn quick-btn--neg" onclick="sheetChange(-20)">−20</button>
+      <button class="quick-btn quick-btn--neg" onclick="sheetChange(-10)">−10</button>
+      <button class="quick-btn quick-btn--pos" onclick="sheetChange(10)">+10</button>
+      <button class="quick-btn quick-btn--pos" onclick="sheetChange(20)">+20</button>
+      <button class="quick-btn quick-btn--pos" onclick="sheetChange(50)">+50</button>
+    </div>
+    <div class="sheet-divider">
+      <div class="or-line"></div>
+      <span class="or-txt">custom amount</span>
+      <div class="or-line"></div>
+    </div>
+    <div class="sheet-custom-row">
+      <input class="sheet-custom-inp" type="number" id="sheetCustom" placeholder="e.g. 35 or −12" />
+      <button class="btn btn--primary" onclick="applySheetCustom()">Apply</button>
+    </div>
+    <button class="sheet-close" onclick="closeSheet()">Cancel</button>
   </div>
 </div>
 
-<!-- End game modal -->
-<div id="endgame-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:100; align-items:center; justify-content:center;">
-  <div class="modal-box endgame-modal-box">
-    <h2 class="endgame-title">🏆 final results</h2>
-    <div id="endgame-body"></div>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeEndGame()">close</button>
-      <button class="btn btn-danger" onclick="closeEndGame(); resetScores()">play again</button>
-    </div>
-  </div>
-</div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-  const GAME_ID = {{ game.id }};
-  const DEFAULT_PTS = {{ game.default_points }};
-  const WIN_CONDITION = "{{ game.win_condition }}";
-  const TARGET_SCORE = {{ game.target_score }};
-  const ALLOW_NEG = {{ 'true' if game.allow_negatives else 'false' }};
-  const IS_JUDGEMENT = {{ 'true' if game.name | lower == 'judgement' else 'false' }};
+const gameEl = document.getElementById('gameData');
+const GAME_ID = gameEl.dataset.gameId;
+const WIN_COND = gameEl.dataset.winCondition;
+const TARGET = parseInt(gameEl.dataset.target);
+const DEFAULT_PTS = parseInt(gameEl.dataset.defaultPoints);
+const ALLOW_NEG = gameEl.dataset.allowNegatives === 'true';
+
+const BG_COLORS = ['#dde0e8','#dde4de','#e4dde4','#e4e0da','#dde8e4','#e8dde0','#e0e4e8','#e8e8de'];
+const TC_COLORS = ['#4a5070','#4a6b50','#6a4a6a','#6a5a40','#3a6a60','#6a3a48','#3a5068','#5a5a38'];
+const BAR_COLORS= ['#8a9ab0','#7a9a80','#9a8a9a','#9a9080','#70a098','#a07888','#7090a8','#909068'];
+let playerCount = document.querySelectorAll('.player-row').length;
+let activeSheetId = null;
+
+// ── Sheet ──────────────────────────────────────────────────
+function openSheet(playerId) {
+  activeSheetId = playerId;
+  const card = document.getElementById(`player-${playerId}`);
+  const name = card.querySelector('.player-name').textContent;
+  const score = card.dataset.score;
+  const bg = card.dataset.colorBg;
+  const tc = card.dataset.colorTc;
+
+  document.getElementById('sheetAvatar').textContent = name[0].toUpperCase();
+  document.getElementById('sheetAvatar').style.background = bg;
+  document.getElementById('sheetAvatar').style.color = tc;
+  document.getElementById('sheetName').textContent = name;
+  document.getElementById('sheetScoreLine').textContent = `Current score: ${score} pts`;
+  document.getElementById('sheetCustom').value = '';
+  document.getElementById('sheetRemove').onclick = () => removePlayer(playerId);
+
+  document.getElementById('sheetOverlay').classList.add('open');
+  document.getElementById('bottomSheet').classList.add('open');
+}
+
+function closeSheet() {
+  document.getElementById('sheetOverlay').classList.remove('open');
+  document.getElementById('bottomSheet').classList.remove('open');
+  activeSheetId = null;
+}
+
+async function sheetChange(val) {
+  if (!activeSheetId) return;
+  const p = await postScore(activeSheetId, val);
+  updatePlayerUI(p);
+  document.getElementById('sheetScoreLine').textContent = `Current score: ${p.score} pts`;
+}
+
+async function applySheetCustom() {
+  const val = parseInt(document.getElementById('sheetCustom').value);
+  if (isNaN(val)) return;
+  await sheetChange(val);
+  document.getElementById('sheetCustom').value = '';
+}
+
+// ── Score ──────────────────────────────────────────────────
+async function postScore(playerId, change) {
+  const res = await fetch(`/api/players/${playerId}/score`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ change }),
+  });
+  return res.json();
+}
+
+async function changeScore(playerId, change) {
+  const p = await postScore(playerId, change);
+  updatePlayerUI(p);
+}
+
+function updatePlayerUI(p) {
+  const scoreEl = document.getElementById(`score-${p.id}`);
+  const card = document.getElementById(`player-${p.id}`);
+  scoreEl.classList.add('score-bump');
+  setTimeout(() => scoreEl.classList.remove('score-bump'), 400);
+  scoreEl.textContent = p.score;
+  card.dataset.score = p.score;
+
+  const hist = document.getElementById(`hist-${p.id}`);
+  hist.innerHTML = p.history.map(e =>
+    `<span class="hist-chip ${e.change > 0 ? 'hist-chip--pos' : e.change < 0 ? 'hist-chip--neg' : ''}">${e.change > 0 ? '+' : ''}${e.change}</span>`
+  ).join('');
+
+  updateBarsAndRanks();
+  updatePodium();
+  checkWin(p);
+}
+
+// ── Bars & Ranks ───────────────────────────────────────────
+function getPlayers() {
+  return Array.from(document.querySelectorAll('.player-row')).map((row, i) => ({
+    id: row.id.replace('player-', ''),
+    name: row.querySelector('.player-name').textContent,
+    score: parseInt(row.dataset.score) || 0,
+    colorIdx: i % 8,
+  }));
+}
+
+function updateBarsAndRanks() {
+  const players = getPlayers();
+  if (!players.length) return;
+  const max = Math.max(...players.map(p => Math.abs(p.score)), 1);
+  const sorted = [...players].sort((a, b) => WIN_COND === 'lowest' ? a.score - b.score : b.score - a.score);
+  const rankMap = {};
+  sorted.forEach((p, i) => rankMap[p.id] = i + 1);
+
+  players.forEach(p => {
+    const bar = document.getElementById(`bar-${p.id}`);
+    const rank = document.getElementById(`rank-${p.id}`);
+    if (bar) bar.style.width = Math.min(100, (Math.abs(p.score) / max) * 100) + '%';
+    if (rank) rank.textContent = '#' + rankMap[p.id];
+  });
+}
+
+// ── Podium ─────────────────────────────────────────────────
+function updatePodium() {
+  const players = getPlayers();
+  const section = document.getElementById('podiumSection');
+  if (players.length < 2) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  const sorted = [...players].sort((a, b) => WIN_COND === 'lowest' ? a.score - b.score : b.score - a.score);
+  const top3 = sorted.slice(0, 3);
+  const order = top3.length === 2 ? [top3[1], top3[0]] : [top3[1], top3[0], top3[2]];
+  const heights = top3.length === 2 ? [58, 78] : [58, 78, 42];
+  const medals = top3.length === 2 ? ['🥈','🥇'] : ['🥈','🥇','🥉'];
+
+  document.getElementById('podium').innerHTML = order.map((p, i) => `
+    <div class="podium-step">
+      <div class="podium-player">
+        <div class="podium-avatar" style="background:${BG_COLORS[p.colorIdx]};color:${TC_COLORS[p.colorIdx]}">${p.name[0].toUpperCase()}</div>
+        <div class="podium-name">${p.name}</div>
+        <div class="podium-score">${p.score}</div>
+      </div>
+      <div class="podium-block" style="height:${heights[i]}px">
+        <span class="podium-medal">${medals[i]}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ── Add Player ─────────────────────────────────────────────
+async function addPlayer() {
+  const nameInp = document.getElementById('playerName');
+  const name = nameInp.value.trim();
+  if (!name) return;
+  const res = await fetch(`/api/games/${GAME_ID}/players`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  const p = await res.json();
+  nameInp.value = '';
+  const ci = playerCount % 8;
+  playerCount++;
+  document.getElementById('emptyState')?.remove();
+  renderPlayerRow(p, ci);
+  updateBarsAndRanks();
+  updatePodium();
+  updatePlayerCountChip();
+}
+
+function renderPlayerRow(p, ci) {
+  const list = document.getElementById('playersList');
+  const div = document.createElement('div');
+  div.className = 'player-row';
+  div.id = `player-${p.id}`;
+  div.dataset.score = 0;
+  div.dataset.colorBg = BG_COLORS[ci];
+  div.dataset.colorTc = TC_COLORS[ci];
+  div.innerHTML = `
+    <div class="player-row__left">
+      <div class="player-avatar" style="background:${BG_COLORS[ci]};color:${TC_COLORS[ci]}">${p.name[0].toUpperCase()}</div>
+      <div class="player-row__info">
+        <span class="player-name">${p.name}</span>
+        <span class="player-history" id="hist-${p.id}"></span>
+      </div>
+    </div>
+    <div class="player-row__right">
+      <div class="player-row__score-wrap">
+        <span class="rank-badge" id="rank-${p.id}">#${playerCount}</span>
+        <span class="score-num" id="score-${p.id}">0</span>
+        <span class="score-label">pts</span>
+      </div>
+      <div class="score-btns">
+        <button class="score-btn score-btn--minus" onclick="changeScore(${p.id}, -${DEFAULT_PTS})">−${DEFAULT_PTS}</button>
+        <button class="score-btn score-btn--plus" onclick="changeScore(${p.id}, ${DEFAULT_PTS})">+${DEFAULT_PTS}</button>
+        <button class="score-btn score-btn--custom" onclick="openSheet(${p.id})">⋯</button>
+      </div>
+    </div>
+    <div class="player-bar-wrap">
+      <div class="player-bar" id="bar-${p.id}" style="width:0%;background:${BAR_COLORS[ci]}"></div>
+    </div>`;
+  div.style.opacity = '0'; div.style.transform = 'translateY(12px)';
+  list.appendChild(div);
+  requestAnimationFrame(() => {
+    div.style.transition = 'opacity 0.3s, transform 0.3s';
+    div.style.opacity = '1'; div.style.transform = 'translateY(0)';
+  });
+}
+
+async function removePlayer(id) {
+  closeSheet();
+  if (!confirm('Remove this player?')) return;
+  await fetch(`/api/players/${id}`, { method: 'DELETE' });
+  const row = document.getElementById(`player-${id}`);
+  if (row) { row.style.opacity='0'; row.style.transform='translateX(-10px)'; setTimeout(()=>row.remove(),250); }
+  playerCount = Math.max(0, playerCount - 1);
+  setTimeout(() => { updateBarsAndRanks(); updatePodium(); updatePlayerCountChip(); }, 300);
+}
+
+function updatePlayerCountChip() {
+  const n = document.querySelectorAll('.player-row').length;
+  document.getElementById('playerCountChip').textContent = `${n} player${n !== 1 ? 's' : ''}`;
+}
+
+// ── Round & Reset ──────────────────────────────────────────
+async function nextRound() {
+  const res = await fetch(`/api/games/${GAME_ID}/next-round`, { method: 'POST' });
+  const data = await res.json();
+  document.getElementById('roundNum').textContent = data.round;
+  showToast(`Round ${data.round} started!`);
+}
+
+async function resetScores() {
+  if (!confirm('Reset all scores to 0?')) return;
+  const res = await fetch(`/api/games/${GAME_ID}/reset`, { method: 'POST' });
+  const game = await res.json();
+  game.players.forEach(p => {
+    const el = document.getElementById(`score-${p.id}`);
+    const row = document.getElementById(`player-${p.id}`);
+    const hist = document.getElementById(`hist-${p.id}`);
+    if (el) el.textContent = 0;
+    if (row) row.dataset.score = 0;
+    if (hist) hist.innerHTML = '';
+  });
+  document.getElementById('roundNum').textContent = 1;
+  updateBarsAndRanks();
+  updatePodium();
+}
+
+// ── Win check ──────────────────────────────────────────────
+function checkWin(p) {
+  if (WIN_COND === 'target' && p.score >= TARGET) {
+    showToast(`🎉 ${p.name} reached ${TARGET} points!`);
+  }
+}
+
+// ── Toast ──────────────────────────────────────────────────
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('toast--show');
+  setTimeout(() => t.classList.remove('toast--show'), 3500);
+}
+
+// ── Init ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  updateBarsAndRanks();
+  updatePodium();
+});
+
+// Enter key for add player
+document.getElementById('playerName').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addPlayer();
+});
 </script>
 {% endblock %}
