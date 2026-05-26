@@ -544,3 +544,40 @@ body {
 .eg-rank{font-size:22px;min-width:30px;}
 .eg-name{flex:1;font-size:15px;font-weight:600;text-align:left;color:var(--text);}
 .eg-score{font-size:15px;font-weight:700;color:var(--green);}
+
+/* ── Drag to reorder ─────────────────────────────────────── */
+.drag-handle{cursor:grab;padding:0 8px;color:var(--text3);font-size:18px;line-height:1;user-select:none;flex-shrink:0;}
+.drag-handle:active{cursor:grabbing;}
+.player-row{display:flex;align-items:center;gap:0;}
+.player-row.dragging{opacity:0.4;}
+.player-row.drag-over{border-color:var(--accent);background:var(--accent-bg);}
+
+/* ── Undo button ─────────────────────────────────────────── */
+.score-btn--undo{background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:14px;cursor:pointer;font-family:inherit;}
+.score-btn--undo:hover{background:var(--border);color:var(--text);}
+
+/* ── Round summary modal ─────────────────────────────────── */
+.summary-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.summary-row:last-child{border-bottom:none;}
+.summary-name{flex:1;font-size:14px;font-weight:500;color:var(--text);}
+.summary-detail{font-size:12px;color:var(--text2);}
+.summary-gained{font-size:14px;font-weight:600;min-width:60px;text-align:right;}
+.summary-total{font-size:12px;color:var(--text2);}
+.summary-gained.pos{color:var(--green);}
+.summary-gained.neg{color:var(--red);}
+
+/* ── Stats page ──────────────────────────────────────────── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:1rem;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center;}
+.stat-avatar{width:48px;height:48px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;}
+.stat-name{font-size:14px;font-weight:600;color:var(--text);}
+.stat-wins{font-size:24px;font-weight:700;color:var(--green);margin:4px 0;}
+.stat-meta{font-size:12px;color:var(--text2);}
+
+/* ── Archive ─────────────────────────────────────────────── */
+.archived-section{margin-top:2rem;opacity:0.7;}
+.archive-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:4px 8px;font-family:inherit;}
+.archive-btn:hover{color:var(--text2);}
+
+/* ── Copy results btn ────────────────────────────────────── */
+.jm-actions .btn{font-size:13px;}

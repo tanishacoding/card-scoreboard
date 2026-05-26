@@ -5,6 +5,7 @@
 <div class="page-hero">
   <h1 class="hero-title">Your Games</h1>
   <p class="hero-sub">Track scores for any card game — pick one below or create your own.</p>
+<a href="/stats" class="btn btn--ghost btn--sm" style="margin-top:8px;">📊 Player Stats</a>
 </div>
 
 <!-- Create Game Card -->
@@ -98,6 +99,7 @@
         <span class="mini-avatar mini-avatar--more">+{{ g.players | length - 5 }}</span>
         {% endif %}
       </div>
+      <button class="archive-btn" onclick="toggleArchive(event, {{ g.id }})">🗂 Archive</button>
       <button class="game-row__delete" onclick="deleteGame(event, {{ g.id }})">✕</button>
     </a>
     {% endfor %}
@@ -109,6 +111,27 @@
   <p>No games yet — create one above to get started!</p>
 </div>
 {% endif %}
+
+{% if archived %}
+<section class="section archived-section">
+  <span class="section-label">Archived Games</span>
+  <div class="games-list">
+    {% for g in archived %}
+    <div class="game-row" style="opacity:0.6;">
+      <div class="game-row__left">
+        <div class="game-row__name">{{ g.name }}</div>
+        <div class="game-row__meta">{{ g.players | length }} players · {{ g.created_at.strftime('%b %d') }} · archived</div>
+      </div>
+      <div style="display:flex;gap:6px;margin-left:auto;">
+        <button class="archive-btn" onclick="toggleArchive(event, {{ g.id }})">↩ Restore</button>
+        <button class="game-row__delete" onclick="deleteGame(event, {{ g.id }})">✕</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 {% endblock %}
 
 {% block scripts %}
@@ -178,6 +201,12 @@ document.getElementById('createGameForm').addEventListener('submit', async funct
   const game = await res.json();
   window.location.href = '/game/' + game.id;
 });
+
+async function toggleArchive(e, id) {
+  e.preventDefault(); e.stopPropagation();
+  await fetch('/api/games/' + id + '/archive', { method: 'POST' });
+  location.reload();
+}
 
 async function deleteGame(e, id) {
   e.preventDefault(); e.stopPropagation();

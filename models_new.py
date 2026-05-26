@@ -7,14 +7,18 @@ db = SQLAlchemy()
 class Game(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    win_condition = db.Column(db.String(20), default='highest')  # highest, lowest, target, none
+    win_condition = db.Column(db.String(20), default='highest')
     target_score = db.Column(db.Integer, default=0)
     allow_negatives = db.Column(db.Boolean, default=True)
     default_points = db.Column(db.Integer, default=1)
+    archived = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    players = db.relationship('Player', backref='game', lazy=True, cascade='all, delete-orphan')
-    rounds = db.relationship('Round', backref='game', lazy=True, cascade='all, delete-orphan')
+    players = db.relationship('Player', backref='game', lazy=True,
+                              cascade='all, delete-orphan',
+                              order_by='Player.order')
+    rounds = db.relationship('Round', backref='game', lazy=True,
+                             cascade='all, delete-orphan')
 
     def to_dict(self):
         return {
@@ -24,6 +28,7 @@ class Game(db.Model):
             'target_score': self.target_score,
             'allow_negatives': self.allow_negatives,
             'default_points': self.default_points,
+            'archived': self.archived,
             'players': [p.to_dict() for p in self.players],
             'current_round': max((r.number for r in self.rounds), default=1),
         }
@@ -33,15 +38,18 @@ class Player(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
     score = db.Column(db.Integer, default=0)
+    order = db.Column(db.Integer, default=0)
     game_id = db.Column(db.Integer, db.ForeignKey('game.id'), nullable=False)
 
-    score_entries = db.relationship('ScoreEntry', backref='player', lazy=True, cascade='all, delete-orphan')
+    score_entries = db.relationship('ScoreEntry', backref='player', lazy=True,
+                                    cascade='all, delete-orphan')
 
     def to_dict(self):
         return {
             'id': self.id,
             'name': self.name,
             'score': self.score,
+            'order': self.order,
             'history': [e.to_dict() for e in self.score_entries[-5:]],
         }
 
@@ -61,7 +69,4 @@ class ScoreEntry(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        return {
-            'change': self.change,
-            'round': self.round_number,
-        }
+        return {'change': self.change, 'round': self.round_number}

@@ -2,6 +2,7 @@
 {% block title %}{{ game.name }} — Scorekeeper{% endblock %}
 
 {% block nav_meta %}
+<a href="/" class="btn btn--ghost btn--sm">← Home</a>
 <span class="round-pill">Round <span id="roundNum">{{ game.current_round }}</span></span>
 {% endblock %}
 
@@ -11,7 +12,8 @@
   data-win-condition="{{ game.win_condition }}"
   data-target="{{ game.target_score }}"
   data-default-points="{{ game.default_points }}"
-  data-allow-negatives="{{ game.allow_negatives | lower }}">
+  data-allow-negatives="{{ game.allow_negatives | lower }}"
+  data-is-judgement="{{ 'true' if game.name | lower == 'judgement' else 'false' }}">
 </div>
 
 <!-- Header -->
@@ -23,10 +25,10 @@
         {% if game.win_condition == 'highest' %}🏆 Highest wins
         {% elif game.win_condition == 'lowest' %}🎯 Lowest wins
         {% elif game.win_condition == 'target' %}🎯 Target: {{ game.target_score }}
-        {% else %}📊 No winner
-        {% endif %}
+        {% else %}📊 No winner{% endif %}
       </span>
       <span class="meta-chip" id="playerCountChip">{{ game.players | length }} player{{ 's' if game.players | length != 1 }}</span>
+      <span class="meta-chip" id="timerChip">⏱ 0:00</span>
     </div>
   </div>
   <div class="game-actions">
@@ -35,7 +37,6 @@
     <button class="btn btn--ghost btn--sm" onclick="endGame()">🏆 End Game</button>
   </div>
 </div>
-
 
 {% if game.name | lower == 'judgement' %}
 <div class="judgement-info-card">
@@ -66,7 +67,7 @@
 </section>
 
 <!-- Player List -->
-<div class="players-list" id="playersList">
+<div class="players-list" id="playersList" id="sortable-list">
   {% set avatar_colors = [
     ('#dde0e8','#4a5070'),('#dde4de','#4a6b50'),('#e4dde4','#6a4a6a'),
     ('#e4e0da','#6a5a40'),('#dde8e4','#3a6a60'),('#e8dde0','#6a3a48'),
@@ -74,7 +75,8 @@
   ] %}
   {% for p in game.players %}
   {% set ci = loop.index0 % 8 %}
-  <div class="player-row" id="player-{{ p.id }}" data-score="{{ p.score }}" data-color-bg="{{ avatar_colors[ci][0] }}" data-color-tc="{{ avatar_colors[ci][1] }}">
+  <div class="player-row" id="player-{{ p.id }}" data-id="{{ p.id }}" data-score="{{ p.score }}" data-color-bg="{{ avatar_colors[ci][0] }}" data-color-tc="{{ avatar_colors[ci][1] }}">
+    <div class="drag-handle" title="Drag to reorder">⠿</div>
     <div class="player-row__left">
       <div class="player-avatar" style="background:{{ avatar_colors[ci][0] }};color:{{ avatar_colors[ci][1] }}">{{ p.name[0].upper() }}</div>
       <div class="player-row__info">
@@ -97,6 +99,7 @@
       <div class="score-btns">
         <button class="score-btn score-btn--minus" onclick="changeScore({{ p.id }}, -{{ game.default_points }})">−{{ game.default_points }}</button>
         <button class="score-btn score-btn--plus" onclick="changeScore({{ p.id }}, {{ game.default_points }})">+{{ game.default_points }}</button>
+        <button class="score-btn score-btn--undo" onclick="undoScore({{ p.id }})" title="Undo last score">↩</button>
         <button class="score-btn score-btn--custom" onclick="openSheet({{ p.id }})">⋯</button>
       </div>
     </div>
@@ -159,17 +162,33 @@
   </div>
 </div>
 
+<!-- Round summary modal -->
+<div id="summary-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;">
+  <div class="jm-box">
+    <h2 id="summary-title" class="jm-title"></h2>
+    <div id="summary-body"></div>
+    <div class="jm-actions">
+      <button class="btn btn--primary" onclick="closeSummaryModal()">Continue →</button>
+    </div>
+  </div>
+</div>
+
 <!-- End game modal -->
 <div id="endgame-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;">
   <div class="jm-box" style="text-align:center;">
     <h2 class="jm-title">🏆 Final results</h2>
     <div id="endgame-body"></div>
     <div class="jm-actions" style="justify-content:center;margin-top:1rem;">
+      <button class="btn btn--ghost" onclick="copyResults()">📋 Copy</button>
+      <button class="btn btn--ghost" onclick="shareWhatsApp()" style="background:#25d366;color:#fff;border-color:#25d366;">💬 WhatsApp</button>
       <button class="btn btn--ghost" onclick="closeEndGame()">Close</button>
       <button class="btn btn--ghost" onclick="closeEndGame();resetScores()">Play again</button>
     </div>
   </div>
 </div>
+
+<!-- Confetti canvas -->
+<canvas id="confetti-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:999;display:none;"></canvas>
 
 {% endblock %}
 
@@ -181,13 +200,24 @@ const WIN_COND = gameEl.dataset.winCondition;
 const TARGET = parseInt(gameEl.dataset.target);
 const DEFAULT_PTS = parseInt(gameEl.dataset.defaultPoints);
 const ALLOW_NEG = gameEl.dataset.allowNegatives === 'true';
-const IS_JUDGEMENT = {{ 'true' if game.name | lower == 'judgement' else 'false' }};
+const IS_JUDGEMENT = gameEl.dataset.isJudgement === 'true';
 
 const BG_COLORS = ['#dde0e8','#dde4de','#e4dde4','#e4e0da','#dde8e4','#e8dde0','#e0e4e8','#e8e8de'];
 const TC_COLORS = ['#4a5070','#4a6b50','#6a4a6a','#6a5a40','#3a6a60','#6a3a48','#3a5068','#5a5a38'];
 const BAR_COLORS= ['#8a9ab0','#7a9a80','#9a8a9a','#9a9080','#70a098','#a07888','#7090a8','#909068'];
 let playerCount = document.querySelectorAll('.player-row').length;
 let activeSheetId = null;
+let currentDealerId = null;
+let lastRoundScores = {};
+
+// ── Timer ──────────────────────────────────────────────────
+const startTime = Date.now();
+setInterval(() => {
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  document.getElementById('timerChip').textContent = `⏱ ${m}:${sec.toString().padStart(2,'0')}`;
+}, 1000);
 
 // ── Sheet ──────────────────────────────────────────────────
 function openSheet(playerId) {
@@ -197,7 +227,6 @@ function openSheet(playerId) {
   const score = card.dataset.score;
   const bg = card.dataset.colorBg;
   const tc = card.dataset.colorTc;
-
   document.getElementById('sheetAvatar').textContent = name[0].toUpperCase();
   document.getElementById('sheetAvatar').style.background = bg;
   document.getElementById('sheetAvatar').style.color = tc;
@@ -205,7 +234,6 @@ function openSheet(playerId) {
   document.getElementById('sheetScoreLine').textContent = `Current score: ${score} pts`;
   document.getElementById('sheetCustom').value = '';
   document.getElementById('sheetRemove').onclick = () => removePlayer(playerId);
-
   document.getElementById('sheetOverlay').classList.add('open');
   document.getElementById('bottomSheet').classList.add('open');
 }
@@ -245,6 +273,17 @@ async function changeScore(playerId, change) {
   updatePlayerUI(p);
 }
 
+async function undoScore(playerId) {
+  const res = await fetch(`/api/players/${playerId}/undo`, { method: 'POST' });
+  if (res.ok) {
+    const p = await res.json();
+    updatePlayerUI(p);
+    showToast('↩ Score undone');
+  } else {
+    showToast('Nothing to undo');
+  }
+}
+
 function updatePlayerUI(p) {
   const scoreEl = document.getElementById(`score-${p.id}`);
   const card = document.getElementById(`player-${p.id}`);
@@ -252,12 +291,10 @@ function updatePlayerUI(p) {
   setTimeout(() => scoreEl.classList.remove('score-bump'), 400);
   scoreEl.textContent = p.score;
   card.dataset.score = p.score;
-
   const hist = document.getElementById(`hist-${p.id}`);
   hist.innerHTML = p.history.map(e =>
     `<span class="hist-chip ${e.change > 0 ? 'hist-chip--pos' : e.change < 0 ? 'hist-chip--neg' : ''}">${e.change > 0 ? '+' : ''}${e.change}</span>`
   ).join('');
-
   updateBarsAndRanks();
   updatePodium();
   checkWin(p);
@@ -266,7 +303,7 @@ function updatePlayerUI(p) {
 // ── Bars & Ranks ───────────────────────────────────────────
 function getPlayers() {
   return Array.from(document.querySelectorAll('.player-row')).map((row, i) => ({
-    id: row.id.replace('player-', ''),
+    id: row.dataset.id || row.id.replace('player-', ''),
     name: row.querySelector('.player-name').textContent,
     score: parseInt(row.dataset.score) || 0,
     colorIdx: i % 8,
@@ -280,7 +317,6 @@ function updateBarsAndRanks() {
   const sorted = [...players].sort((a, b) => WIN_COND === 'lowest' ? a.score - b.score : b.score - a.score);
   const rankMap = {};
   sorted.forEach((p, i) => rankMap[p.id] = i + 1);
-
   players.forEach(p => {
     const bar = document.getElementById(`bar-${p.id}`);
     const rank = document.getElementById(`rank-${p.id}`);
@@ -295,13 +331,11 @@ function updatePodium() {
   const section = document.getElementById('podiumSection');
   if (players.length < 2) { section.style.display = 'none'; return; }
   section.style.display = 'block';
-
   const sorted = [...players].sort((a, b) => WIN_COND === 'lowest' ? a.score - b.score : b.score - a.score);
   const top3 = sorted.slice(0, 3);
   const order = top3.length === 2 ? [top3[1], top3[0]] : [top3[1], top3[0], top3[2]];
   const heights = top3.length === 2 ? [58, 78] : [58, 78, 42];
   const medals = top3.length === 2 ? ['🥈','🥇'] : ['🥈','🥇','🥉'];
-
   document.getElementById('podium').innerHTML = order.map((p, i) => `
     <div class="podium-step">
       <div class="podium-player">
@@ -341,10 +375,12 @@ function renderPlayerRow(p, ci) {
   const div = document.createElement('div');
   div.className = 'player-row';
   div.id = `player-${p.id}`;
+  div.dataset.id = p.id;
   div.dataset.score = 0;
   div.dataset.colorBg = BG_COLORS[ci];
   div.dataset.colorTc = TC_COLORS[ci];
   div.innerHTML = `
+    <div class="drag-handle" title="Drag to reorder">⠿</div>
     <div class="player-row__left">
       <div class="player-avatar" style="background:${BG_COLORS[ci]};color:${TC_COLORS[ci]}">${p.name[0].toUpperCase()}</div>
       <div class="player-row__info">
@@ -361,6 +397,7 @@ function renderPlayerRow(p, ci) {
       <div class="score-btns">
         <button class="score-btn score-btn--minus" onclick="changeScore(${p.id}, -${DEFAULT_PTS})">−${DEFAULT_PTS}</button>
         <button class="score-btn score-btn--plus" onclick="changeScore(${p.id}, ${DEFAULT_PTS})">+${DEFAULT_PTS}</button>
+        <button class="score-btn score-btn--undo" onclick="undoScore(${p.id})" title="Undo last score">↩</button>
         <button class="score-btn score-btn--custom" onclick="openSheet(${p.id})">⋯</button>
       </div>
     </div>
@@ -373,6 +410,7 @@ function renderPlayerRow(p, ci) {
     div.style.transition = 'opacity 0.3s, transform 0.3s';
     div.style.opacity = '1'; div.style.transform = 'translateY(0)';
   });
+  initDragForRow(div);
 }
 
 async function removePlayer(id) {
@@ -390,13 +428,181 @@ function updatePlayerCountChip() {
   document.getElementById('playerCountChip').textContent = `${n} player${n !== 1 ? 's' : ''}`;
 }
 
+// ── Drag to reorder ────────────────────────────────────────
+let dragSrc = null;
+
+function initDragForRow(row) {
+  const handle = row.querySelector('.drag-handle');
+  handle.addEventListener('mousedown', () => { row.draggable = true; });
+  handle.addEventListener('touchstart', () => { row.draggable = true; }, {passive:true});
+  row.addEventListener('dragstart', e => { dragSrc = row; row.classList.add('dragging'); });
+  row.addEventListener('dragend', async () => {
+    row.draggable = false;
+    row.classList.remove('dragging');
+    document.querySelectorAll('.player-row').forEach(r => r.classList.remove('drag-over'));
+    const order = [...document.querySelectorAll('.player-row')].map(r => r.dataset.id);
+    await fetch(`/api/games/${GAME_ID}/reorder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order }),
+    });
+    updateBarsAndRanks();
+    updatePodium();
+  });
+  row.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (!dragSrc || dragSrc === row) return;
+    document.querySelectorAll('.player-row').forEach(r => r.classList.remove('drag-over'));
+    row.classList.add('drag-over');
+    const list = document.getElementById('playersList');
+    const rows = [...list.querySelectorAll('.player-row')];
+    const srcIdx = rows.indexOf(dragSrc);
+    const tgtIdx = rows.indexOf(row);
+    if (srcIdx < tgtIdx) list.insertBefore(dragSrc, row.nextSibling);
+    else list.insertBefore(dragSrc, row);
+  });
+}
+
+// Init drag for existing rows on load
+document.querySelectorAll('.player-row').forEach(initDragForRow);
+
 // ── Round & Reset ──────────────────────────────────────────
 async function nextRound() {
+  // Save scores before round for summary
+  getPlayers().forEach(p => { lastRoundScores[p.id] = p.score; });
   const res = await fetch(`/api/games/${GAME_ID}/next-round`, { method: 'POST' });
   const data = await res.json();
   document.getElementById('roundNum').textContent = data.round;
-  if (IS_JUDGEMENT) { openJudgementModal(data.round); }
-  else { showToast(`Round ${data.round} started!`); }
+  if (IS_JUDGEMENT) {
+    openJudgementModal(data.round);
+  } else {
+    showRoundSummary(data.round - 1);
+  }
+}
+
+async function resetScores() {
+  if (!confirm('Reset all scores to 0?')) return;
+  const res = await fetch(`/api/games/${GAME_ID}/reset`, { method: 'POST' });
+  const game = await res.json();
+  game.players.forEach(p => {
+    const el = document.getElementById(`score-${p.id}`);
+    const row = document.getElementById(`player-${p.id}`);
+    const hist = document.getElementById(`hist-${p.id}`);
+    if (el) el.textContent = 0;
+    if (row) row.dataset.score = 0;
+    if (hist) hist.innerHTML = '';
+  });
+  document.getElementById('roundNum').textContent = 1;
+  lastRoundScores = {};
+  updateBarsAndRanks();
+  updatePodium();
+}
+
+// ── Round Summary ──────────────────────────────────────────
+function showRoundSummary(round) {
+  const players = getPlayers();
+  const modal = document.getElementById('summary-modal');
+  document.getElementById('summary-title').textContent = `Round ${round} summary`;
+  const sorted = [...players].sort((a,b) => {
+    const da = a.score - (lastRoundScores[a.id] || 0);
+    const db = b.score - (lastRoundScores[b.id] || 0);
+    return db - da;
+  });
+  document.getElementById('summary-body').innerHTML = sorted.map(p => {
+    const gained = p.score - (lastRoundScores[p.id] || 0);
+    return `<div class="summary-row">
+      <span class="summary-name">${p.name}</span>
+      <span class="summary-gained ${gained > 0 ? 'pos' : gained < 0 ? 'neg' : ''}">${gained > 0 ? '+' : ''}${gained} pts</span>
+      <span class="summary-total">${p.score} total</span>
+    </div>`;
+  }).join('');
+  modal.style.display = 'flex';
+}
+
+function closeSummaryModal() {
+  document.getElementById('summary-modal').style.display = 'none';
+  getPlayers().forEach(p => { lastRoundScores[p.id] = p.score; });
+}
+
+// ── Win check ──────────────────────────────────────────────
+function checkWin(p) {
+  if (WIN_COND === 'target' && p.score >= TARGET) {
+    showToast(`🎉 ${p.name} reached ${TARGET} points!`);
+    launchConfetti();
+  }
+}
+
+// ── Confetti ───────────────────────────────────────────────
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.display = 'block';
+  const ctx = canvas.getContext('2d');
+  const pieces = Array.from({length: 120}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height - canvas.height,
+    r: Math.random() * 6 + 4,
+    d: Math.random() * 3 + 1,
+    color: ['#1D9E75','#5a6e72','#f0c040','#e87060','#7a90c0'][Math.floor(Math.random()*5)],
+    tilt: Math.random() * 10 - 10,
+    tiltAngle: 0,
+    tiltSpeed: Math.random() * 0.1 + 0.05,
+  }));
+  let frame = 0;
+  const maxFrames = 200;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      p.tiltAngle += p.tiltSpeed;
+      p.y += p.d;
+      p.tilt = Math.sin(p.tiltAngle) * 12;
+      if (p.y > canvas.height) { p.y = -10; p.x = Math.random() * canvas.width; }
+      ctx.beginPath();
+      ctx.fillStyle = p.color;
+      ctx.ellipse(p.x + p.tilt, p.y, p.r, p.r * 0.4, p.tiltAngle, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    frame++;
+    if (frame < maxFrames) requestAnimationFrame(draw);
+    else { ctx.clearRect(0,0,canvas.width,canvas.height); canvas.style.display='none'; }
+  }
+  draw();
+}
+
+// ── End Game ───────────────────────────────────────────────
+function endGame() {
+  const players = getPlayers();
+  if (!players.length) return;
+  const sorted = [...players].sort((a,b) => WIN_COND === 'lowest' ? a.score-b.score : b.score-a.score);
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('endgame-body').innerHTML = sorted.map((p,i) => `
+    <div class="eg-row ${i===0?'eg-winner':''}">
+      <span class="eg-rank">${medals[i]||'#'+(i+1)}</span>
+      <span class="eg-name">${p.name}</span>
+      <span class="eg-score">${p.score} pts</span>
+    </div>`).join('');
+  document.getElementById('endgame-modal').style.display = 'flex';
+  launchConfetti();
+}
+
+function closeEndGame() { document.getElementById('endgame-modal').style.display = 'none'; }
+
+function copyResults() {
+  navigator.clipboard.writeText(buildResultsText()).then(() => showToast('📋 Results copied!'));
+}
+
+function buildResultsText() {
+  const players = getPlayers();
+  const sorted = [...players].sort((a,b) => WIN_COND === 'lowest' ? a.score-b.score : b.score-a.score);
+  const medals = ['🥇','🥈','🥉'];
+  const round = document.getElementById('roundNum').textContent;
+  return `🃏 Scorekeeper — Round ${round} results\n` + sorted.map((p,i) => `${medals[i]||'  '} ${p.name}: ${p.score} pts`).join('\n');
+}
+
+function shareWhatsApp() {
+  const text = encodeURIComponent(buildResultsText());
+  window.open(`https://wa.me/?text=${text}`, '_blank');
 }
 
 // ── Judgement scoring ──────────────────────────────────────
@@ -406,17 +612,22 @@ function judgementPoints(predicted) {
   return predicted * 10;
 }
 
-let currentDealerId = null;
-
 function openJudgementModal(round) {
   const players = getPlayers();
-  if (players.length === 0) return;
+  if (!players.length) return;
   const modal = document.getElementById('judgement-modal');
   const body = document.getElementById('judgement-body');
   document.getElementById('judgement-title').textContent = `Round ${round} — predictions & results`;
   const defaultDealer = currentDealerId || players[players.length - 1].id;
-  const playerOptions = players.map(p => `<option value="${p.id}" ${p.id == defaultDealer ? 'selected' : ''}>${p.name}</option>`).join('');
-
+  // Auto-rotate dealer
+  if (currentDealerId) {
+    const idx = players.findIndex(p => p.id == currentDealerId);
+    const next = players[(idx + 1) % players.length];
+    currentDealerId = next.id;
+  } else {
+    currentDealerId = defaultDealer;
+  }
+  const playerOptions = players.map(p => `<option value="${p.id}" ${p.id == currentDealerId ? 'selected' : ''}>${p.name}</option>`).join('');
   body.innerHTML = `
     <div class="jm-top-row">
       <div class="jm-field"><label>Cards distributed</label><input type="number" id="cards-distributed" min="1" max="52" value="7" class="jm-input" /></div>
@@ -443,7 +654,7 @@ function openJudgementModal(round) {
   function attachListeners() {
     function updateAll() {
       const cards = parseInt(document.getElementById('cards-distributed').value) || 0;
-      const total = [...document.querySelectorAll('.pred-input')].reduce((s, i) => s + (parseInt(i.value)||0), 0);
+      const total = [...document.querySelectorAll('.pred-input')].reduce((s,i) => s+(parseInt(i.value)||0), 0);
       document.getElementById('dealer-warning').style.display = total === cards ? 'block' : 'none';
       players.forEach(p => {
         const pred = parseInt(document.getElementById(`pred-${p.id}`)?.value) || 0;
@@ -458,7 +669,7 @@ function openJudgementModal(round) {
     updateAll();
   }
 
-  document.getElementById('dealer-select').addEventListener('change', renderRows);
+  document.getElementById('dealer-select').addEventListener('change', () => { currentDealerId = document.getElementById('dealer-select').value; renderRows(); });
   renderRows();
   modal.style.display = 'flex';
 }
@@ -466,9 +677,11 @@ function openJudgementModal(round) {
 async function submitJudgement() {
   const players = getPlayers();
   const cards = parseInt(document.getElementById('cards-distributed').value) || 0;
-  const total = [...document.querySelectorAll('.pred-input')].reduce((s, i) => s + (parseInt(i.value)||0), 0);
+  const total = [...document.querySelectorAll('.pred-input')].reduce((s,i) => s+(parseInt(i.value)||0), 0);
   if (total === cards) { document.getElementById('dealer-warning').style.display = 'block'; return; }
-  const roundLabel = `Round ${document.getElementById('roundNum').textContent}`;
+  const roundNum = parseInt(document.getElementById('roundNum').textContent);
+  const roundScoresBefore = {};
+  players.forEach(p => { roundScoresBefore[p.id] = p.score; });
   for (const p of players) {
     const pred = parseInt(document.getElementById(`pred-${p.id}`)?.value) || 0;
     const actual = parseInt(document.getElementById(`actual-${p.id}`)?.value) || 0;
@@ -477,51 +690,28 @@ async function submitJudgement() {
     updatePlayerUI(result);
   }
   closeJudgementModal();
-  showToast(`Scores saved!`);
+  // Show round summary after Judgement scores
+  setTimeout(() => showJudgementSummary(roundNum, players, roundScoresBefore), 300);
 }
 
-function closeJudgementModal() {
-  document.getElementById('judgement-modal').style.display = 'none';
-}
-
-function endGame() {
-  const players = getPlayers();
-  const sorted = [...players].sort((a,b) => WIN_COND === 'lowest' ? a.score-b.score : b.score-a.score);
-  const medals = ['🥇','🥈','🥉'];
-  document.getElementById('endgame-body').innerHTML = sorted.map((p,i) => `
-    <div class="eg-row ${i===0?'eg-winner':''}">
-      <span class="eg-rank">${medals[i]||'#'+(i+1)}</span>
-      <span class="eg-name">${p.name}</span>
-      <span class="eg-score">${p.score} pts</span>
+function showJudgementSummary(round, players, scoresBefore) {
+  document.getElementById('summary-title').textContent = `Round ${round} results`;
+  const rows = players.map(p => {
+    const pred = parseInt(document.getElementById(`pred-${p.id}`)?.value) || 0;
+    const actual = parseInt(document.getElementById(`actual-${p.id}`)?.value) || 0;
+    const gained = (parseInt(document.getElementById(`score-${p.id}`)?.textContent) || 0) - (scoresBefore[p.id] || 0);
+    return { name: p.name, pred, actual, gained };
+  }).sort((a,b) => b.gained - a.gained);
+  document.getElementById('summary-body').innerHTML = rows.map(r => `
+    <div class="summary-row">
+      <span class="summary-name">${r.name}</span>
+      <span class="summary-detail">pred ${r.pred}, made ${r.actual}</span>
+      <span class="summary-gained ${r.gained > 0 ? 'pos' : 'neg'}">${r.gained > 0 ? '+' : ''}${r.gained} pts</span>
     </div>`).join('');
-  document.getElementById('endgame-modal').style.display = 'flex';
+  document.getElementById('summary-modal').style.display = 'flex';
 }
 
-function closeEndGame() { document.getElementById('endgame-modal').style.display = 'none'; }
-
-async function resetScores() {
-  if (!confirm('Reset all scores to 0?')) return;
-  const res = await fetch(`/api/games/${GAME_ID}/reset`, { method: 'POST' });
-  const game = await res.json();
-  game.players.forEach(p => {
-    const el = document.getElementById(`score-${p.id}`);
-    const row = document.getElementById(`player-${p.id}`);
-    const hist = document.getElementById(`hist-${p.id}`);
-    if (el) el.textContent = 0;
-    if (row) row.dataset.score = 0;
-    if (hist) hist.innerHTML = '';
-  });
-  document.getElementById('roundNum').textContent = 1;
-  updateBarsAndRanks();
-  updatePodium();
-}
-
-// ── Win check ──────────────────────────────────────────────
-function checkWin(p) {
-  if (WIN_COND === 'target' && p.score >= TARGET) {
-    showToast(`🎉 ${p.name} reached ${TARGET} points!`);
-  }
-}
+function closeJudgementModal() { document.getElementById('judgement-modal').style.display = 'none'; }
 
 // ── Toast ──────────────────────────────────────────────────
 function showToast(msg) {
@@ -538,9 +728,17 @@ document.addEventListener('DOMContentLoaded', () => {
   updatePodium();
 });
 
-// Enter key for add player
 document.getElementById('playerName').addEventListener('keydown', e => {
   if (e.key === 'Enter') addPlayer();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeSheet();
+    closeJudgementModal();
+    document.getElementById('summary-modal').style.display = 'none';
+    closeEndGame();
+  }
 });
 </script>
 {% endblock %}
