@@ -50,7 +50,7 @@
     <span class="ji-pill">N≥2 → N×10 pts</span>
     <span class="ji-pill ji-pill--warn">wrong → +0 pts</span>
   </div>
-  <div class="ji-hint">Click <strong>Next Round</strong> after each round to enter predictions. The dealer cannot make total bids equal cards dealt.</div>
+  <div class="ji-hint">Click the <strong>Enter Predictions</strong> button above after each round. The dealer cannot make total bids equal cards dealt.</div>
 </div>
 {% endif %}
 
@@ -580,13 +580,28 @@ function endGame() {
   const players = getPlayers();
   if (!players.length) return;
   const sorted = [...players].sort((a,b) => WIN_COND === 'lowest' ? a.score-b.score : b.score-a.score);
-  const medals = ['🥇','🥈','🥉'];
-  document.getElementById('endgame-body').innerHTML = sorted.map((p,i) => `
-    <div class="eg-row ${i===0?'eg-winner':''}">
-      <span class="eg-rank">${medals[i]||'#'+(i+1)}</span>
-      <span class="eg-name">${p.name}</span>
+  // Assign ranks accounting for ties
+  const rankedPlayers = sorted.map((p, i) => {
+    if (i === 0) return { ...p, rank: 1 };
+    const prevScore = sorted[i - 1].score;
+    const prevRank = i; // will be overwritten
+    return { ...p, tied: p.score === sorted[i-1].score };
+  });
+  // Calculate actual ranks
+  let rank = 1;
+  const withRanks = sorted.map((p, i) => {
+    if (i > 0 && p.score !== sorted[i-1].score) rank = i + 1;
+    return { ...p, rank };
+  });
+  const rankEmoji = { 1: '🥇', 2: '🥈', 3: '🥉' };
+  document.getElementById('endgame-body').innerHTML = withRanks.map((p, i) => {
+    const isTied = withRanks.filter(x => x.rank === p.rank).length > 1;
+    return `<div class="eg-row ${p.rank === 1 ? 'eg-winner' : ''}">
+      <span class="eg-rank">${rankEmoji[p.rank] || '#' + p.rank}</span>
+      <span class="eg-name">${p.name}${isTied ? ' <span class="tie-badge">tie</span>' : ''}</span>
       <span class="eg-score">${p.score} pts</span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   document.getElementById('endgame-modal').style.display = 'flex';
   launchConfetti();
 }
