@@ -510,3 +510,37 @@ body {
   .navbar { padding: 0 1rem; }
   .bottom-sheet { padding: 1rem 1rem 2rem; }
 }
+
+/* ── Judgement modal ─────────────────────────────────────── */
+.jm-box{background:var(--surface);border-radius:var(--radius);padding:1.5rem;width:90%;max-width:520px;max-height:85vh;overflow-y:auto;border:1px solid var(--border);}
+.jm-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:1.25rem;}
+.jm-top-row{display:flex;gap:14px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:12px;}
+.jm-field{display:flex;flex-direction:column;gap:4px;}
+.jm-field label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.4px;font-weight:500;}
+.jm-input{width:72px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:15px;text-align:center;background:var(--bg);color:var(--text);font-family:inherit;}
+.jm-select{padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text);font-family:inherit;min-width:130px;}
+.jm-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.jm-row:last-child{border-bottom:none;}
+.jm-name{font-size:14px;font-weight:500;min-width:80px;color:var(--text);}
+.jm-inputs{display:flex;gap:10px;align-items:center;flex:1;flex-wrap:wrap;}
+.jm-inp-group{display:flex;flex-direction:column;gap:3px;}
+.jm-inp-group label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.3px;}
+.jm-pts{font-size:13px;font-weight:600;min-width:68px;}
+.jm-dealer-badge{display:inline-block;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:20px;font-size:10px;font-weight:600;padding:1px 7px;margin-left:6px;}
+.jm-warning{background:var(--red-bg);border:1px solid var(--red-bdr);color:var(--red);border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;margin-top:10px;}
+.jm-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;}
+
+/* ── Judgement info card ─────────────────────────────────── */
+.judgement-info-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin:0 1rem 1rem;}
+.ji-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;}
+.ji-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.ji-pill{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bdr);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:500;}
+.ji-pill--warn{background:var(--red-bg);color:var(--red);border-color:var(--red-bdr);}
+.ji-hint{font-size:12px;color:var(--text2);line-height:1.6;}
+
+/* ── End game modal ──────────────────────────────────────── */
+.eg-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);margin-bottom:8px;background:var(--bg);border:1px solid var(--border);}
+.eg-winner{background:#fffbeb;border-color:#fcd34d;}
+.eg-rank{font-size:22px;min-width:30px;}
+.eg-name{flex:1;font-size:15px;font-weight:600;text-align:left;color:var(--text);}
+.eg-score{font-size:15px;font-weight:700;color:var(--green);}
