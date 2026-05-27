@@ -29,6 +29,8 @@
       </span>
       <span class="meta-chip" id="playerCountChip">{{ game.players | length }} player{{ 's' if game.players | length != 1 }}</span>
       <span class="meta-chip" id="timerChip">⏱ 0:00</span>
+      <span class="meta-chip" id="hukumChip">♠️ Spade</span>
+      <span class="meta-chip" id="hukumChip">♠️ Spade</span>
     </div>
   </div>
   <div class="game-actions">
@@ -39,7 +41,14 @@
 </div>
 
 {% if game.name | lower == 'judgement' %}
-<button class="judgement-cta" onclick="openJudgementModal(parseInt(document.getElementById('roundNum').textContent))">
+<div class="cards-setup-card" id="cardsSetupCard">
+  <div class="cards-setup-inner">
+    <span class="cards-setup-label">How many cards are being distributed in round 1?</span>
+    <input type="number" id="startingCards" class="jm-input" value="7" min="1" max="52" style="width:70px;text-align:center;" />
+    <button class="btn btn--primary btn--sm" onclick="setStartingCards()">Set</button>
+  </div>
+</div>
+<button class="judgement-cta" id="judgementCta" onclick="openJudgementModal(parseInt(document.getElementById('roundNum').textContent))" style="display:none;">
   🃏 Enter Round <span id="ctaRound">1</span> Predictions & Results
 </button>
 <div class="judgement-info-card">
@@ -205,6 +214,29 @@ const DEFAULT_PTS = parseInt(gameEl.dataset.defaultPoints);
 const ALLOW_NEG = gameEl.dataset.allowNegatives === 'true';
 const IS_JUDGEMENT = gameEl.dataset.isJudgement === 'true';
 
+// ── Starting cards ─────────────────────────────────────────
+let startingCardsCount = 0;
+
+function setStartingCards() {
+  const val = parseInt(document.getElementById('startingCards').value);
+  if (!val || val < 1) return;
+  startingCardsCount = val;
+  document.getElementById('cardsSetupCard').style.display = 'none';
+  document.getElementById('judgementCta').style.display = 'block';
+}
+
+function getCardsForRound(round) {
+  if (!startingCardsCount) return 7;
+  const max = startingCardsCount;
+  if (round <= max) {
+    // Descending: 7,6,5,4,3,2,1
+    return max - (round - 1);
+  } else {
+    // Ascending from 2: 2,3,4,5,6,7...
+    return (round - max) + 1;
+  }
+}
+
 const BG_COLORS = ['#dde0e8','#dde4de','#e4dde4','#e4e0da','#dde8e4','#e8dde0','#e0e4e8','#e8e8de'];
 const TC_COLORS = ['#4a5070','#4a6b50','#6a4a6a','#6a5a40','#3a6a60','#6a3a48','#3a5068','#5a5a38'];
 const BAR_COLORS= ['#8a9ab0','#7a9a80','#9a8a9a','#9a9080','#70a098','#a07888','#7090a8','#909068'];
@@ -212,6 +244,18 @@ let playerCount = document.querySelectorAll('.player-row').length;
 let activeSheetId = null;
 let currentDealerId = null;
 let lastRoundScores = {};
+
+// ── Hukum (trump suit) ────────────────────────────────────
+const HUKUM_CYCLE = [
+  { label: 'Spade',    emoji: '♠️', color: 'var(--color-text-primary)' },
+  { label: 'Heart',    emoji: '♥️', color: '#c0392b' },
+  { label: 'Club',     emoji: '♣️', color: 'var(--color-text-primary)' },
+  { label: 'Diamond',  emoji: '♦️', color: '#c0392b' },
+  { label: 'No Hukum', emoji: '🚫', color: 'var(--color-text-secondary)' },
+];
+function getHukumForRound(round) {
+  return HUKUM_CYCLE[(round - 1) % HUKUM_CYCLE.length];
+}
 
 // ── Timer ──────────────────────────────────────────────────
 const startTime = Date.now();
@@ -477,6 +521,14 @@ async function nextRound() {
   document.getElementById('roundNum').textContent = data.round;
   const ctaRound = document.getElementById('ctaRound');
   if (ctaRound) ctaRound.textContent = data.round;
+  const hukumChip = document.getElementById('hukumChip');
+  if (hukumChip) {
+    const h = getHukumForRound(data.round);
+    hukumChip.textContent = h.emoji + ' ' + h.label;
+    hukumChip.style.color = h.color;
+  }
+  const hukumChip = document.getElementById('hukumChip');
+  if (hukumChip) { const h = getHukumForRound(data.round); hukumChip.textContent = h.emoji + ' ' + h.label; hukumChip.style.color = h.color; }
   if (IS_JUDGEMENT) {
     // Open predictions for the NEW round
     openJudgementModal(data.round);
@@ -649,8 +701,10 @@ function openJudgementModal(round) {
   }
   const playerOptions = players.map(p => `<option value="${p.id}" ${p.id == currentDealerId ? 'selected' : ''}>${p.name}</option>`).join('');
   body.innerHTML = `
+    <div class="jm-hukum-banner" id="jm-hukum-banner"></div>
+    <div class="jm-hukum-banner" id="jm-hukum-banner"></div>
     <div class="jm-top-row">
-      <div class="jm-field"><label>Cards distributed</label><input type="number" id="cards-distributed" min="1" max="52" value="7" class="jm-input" /></div>
+      <div class="jm-field"><label>Cards distributed</label><input type="number" id="cards-distributed" min="1" max="52" value="${getCardsForRound(round)}" class="jm-input" /></div>
       <div class="jm-field"><label>Dealer this round</label><select id="dealer-select" class="jm-select">${playerOptions}</select></div>
     </div>
     <div id="jm-players"></div>
@@ -689,6 +743,20 @@ function openJudgementModal(round) {
     updateAll();
   }
 
+  // Set hukum banner
+  const hukum = getHukumForRound(round);
+  const banner = document.getElementById('jm-hukum-banner');
+  if (banner) {
+    banner.innerHTML = `<span class="hukum-emoji">${hukum.emoji}</span><span class="hukum-label">Hukum: <strong>${hukum.label}</strong></span>`;
+    banner.style.color = hukum.color;
+  }
+
+  const hukum = getHukumForRound(round);
+  const banner = document.getElementById('jm-hukum-banner');
+  if (banner) {
+    banner.innerHTML = `<span style="font-size:22px;">${hukum.emoji}</span><span class="hukum-text">Hukum this round: <strong>${hukum.label}</strong></span>`;
+    banner.style.borderColor = hukum.label === 'No Hukum' ? '#ccc' : hukum.color;
+  }
   document.getElementById('dealer-select').addEventListener('change', () => { currentDealerId = document.getElementById('dealer-select').value; renderRows(); });
   renderRows();
   modal.style.display = 'flex';

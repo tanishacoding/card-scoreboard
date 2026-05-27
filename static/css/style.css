@@ -601,3 +601,16 @@ body {
 }
 .judgement-cta:hover { background: #c8eede; transform: translateY(-1px); }
 .judgement-cta:active { transform: translateY(0); }
+
+/* Tie badge */
+.tie-badge{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:20px;font-size:10px;font-weight:600;padding:1px 7px;margin-left:6px;vertical-align:middle;}
+
+/* ── Cards setup card ────────────────────────────────────── */
+.cards-setup-card{background:var(--surface);border:1.5px solid var(--green,#1D9E75);border-radius:var(--radius);padding:1rem 1.25rem;margin:0 1rem 1rem;}
+.cards-setup-inner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.cards-setup-label{flex:1;font-size:14px;font-weight:500;color:var(--text);min-width:160px;}
+
+/* ── Hukum banner ────────────────────────────────────────── */
+.jm-hukum-banner{display:flex;align-items:center;gap:10px;background:var(--color-background-secondary);border:1.5px solid #ccc;border-radius:var(--border-radius-md);padding:10px 14px;margin-bottom:14px;}
+.hukum-text{font-size:14px;color:var(--color-text-primary);}
+.hukum-text strong{font-weight:500;}
