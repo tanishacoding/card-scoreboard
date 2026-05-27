@@ -41,6 +41,17 @@
 </div>
 
 {% if game.name | lower == 'judgement' %}
+<script>
+// Inline so it's available immediately when button is clicked
+let startingCardsCount = 0;
+function setStartingCards() {
+  const val = parseInt(document.getElementById('startingCards').value);
+  if (!val || val < 1) return;
+  startingCardsCount = val;
+  document.getElementById('cardsSetupCard').style.display = 'none';
+  document.getElementById('judgementCta').style.display = 'block';
+}
+</script>
 <div class="cards-setup-card" id="cardsSetupCard">
   <div class="cards-setup-inner">
     <span class="cards-setup-label">How many cards are being distributed in round 1?</span>
@@ -215,16 +226,6 @@ const ALLOW_NEG = gameEl.dataset.allowNegatives === 'true';
 const IS_JUDGEMENT = gameEl.dataset.isJudgement === 'true';
 
 // ── Starting cards ─────────────────────────────────────────
-let startingCardsCount = 0;
-
-function setStartingCards() {
-  const val = parseInt(document.getElementById('startingCards').value);
-  if (!val || val < 1) return;
-  startingCardsCount = val;
-  document.getElementById('cardsSetupCard').style.display = 'none';
-  document.getElementById('judgementCta').style.display = 'block';
-}
-
 function getCardsForRound(round) {
   if (!startingCardsCount) return 7;
   const max = startingCardsCount;
