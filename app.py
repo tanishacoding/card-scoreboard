@@ -141,6 +141,7 @@ def reset_scores(game_id):
 
 
 # ── Socket.IO ──────────────────────────────────────────────────────────────────
+# ── Socket.IO ──────────────────────────────────────────────────────────────────
 
 @socketio.on('join')
 def on_join(data):
@@ -148,7 +149,5 @@ def on_join(data):
 
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
     socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)
-socketio = SocketIO(app, cors_allowed_origins='*')
-port = int(os.environ.get('PORT', 5000))  # add this line
-
