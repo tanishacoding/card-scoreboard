@@ -527,7 +527,7 @@ async function nextRound() {
     hukumChip.textContent = h.emoji + ' ' + h.label;
     hukumChip.style.color = h.color;
   }
-  const hukumChip = document.getElementById('hukumChip');
+    hukumChip = document.getElementById('hukumChip');
   if (hukumChip) { h = getHukumForRound(data.round); hukumChip.textContent = h.emoji + ' ' + h.label; hukumChip.style.color = h.color; }  if (IS_JUDGEMENT) {
     // Open predictions for the NEW round
     openJudgementModal(data.round);
