@@ -2,80 +2,61 @@
 {% block title %}Scorekeeper — Home{% endblock %}
 
 {% block content %}
+
+<!-- Hero -->
 <div class="page-hero">
-  <h1 class="hero-title">Your Games</h1>
+  <h1 class="hero-title">🃏 scorekeeper</h1>
   <p class="hero-sub">Track scores for any card game — pick one below or create your own.</p>
-<a href="/stats" class="btn btn--ghost btn--sm" style="margin-top:8px;">📊 Player Stats</a>
+  <a href="/stats" class="btn btn--ghost btn--sm" style="margin-top:8px;">📊 Player Stats</a>
 </div>
 
-<!-- Create Game Card -->
+<!-- Game picker -->
 <section class="section">
-  <div class="create-card">
-    <span class="section-label">New Game</span>
+  <span class="section-label">Choose a game</span>
+  <input class="field-input" type="text" id="gameSearch" placeholder="🔍 Search games... e.g. Rummy, Poker" oninput="filterGames()" style="margin-bottom:12px;" />
+  <div class="games-grid" id="gamesGrid"></div>
 
-    <!-- Game Picker -->
-    <div class="game-picker">
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input
-          class="search-inp"
-          id="gameSearch"
-          type="text"
-          placeholder="Search games… e.g. Rummy, Poker"
-          oninput="filterGames()"
-          autocomplete="off"
-        />
+  <div class="form-divider"><div class="or-line"></div><span class="or-txt">or enter a custom name</span><div class="or-line"></div></div>
+
+  <form id="createGameForm">
+    <div class="form-row-grid">
+      <div class="field field--grow">
+        <label class="field-label">Game Name</label>
+        <input class="field-input" type="text" name="name" id="gameNameInp" placeholder="e.g. Judgement, Bluff..." required />
       </div>
-
-      <div class="games-grid" id="gamesGrid"></div>
-
-      <div class="or-divider">
-        <div class="or-line"></div>
-        <span class="or-txt">or enter a custom name</span>
-        <div class="or-line"></div>
+      <div class="field field--sm">
+        <label class="field-label">Win Condition</label>
+        <select class="field-input" name="win_condition" id="winCondSelect">
+          <option value="highest">Highest Score</option>
+          <option value="lowest">Lowest Score</option>
+          <option value="target">First to Target</option>
+          <option value="none">No Winner</option>
+        </select>
       </div>
     </div>
 
-    <!-- Game Form -->
-    <form id="createGameForm" class="create-form">
-      <div class="form-row">
-        <div class="field field--grow">
-          <label class="field-label">Game Name</label>
-          <input class="field-input" type="text" name="name" id="gameNameInp" placeholder="e.g. Friday Night Rummy" required />
-        </div>
-        <div class="field field--sm">
-          <label class="field-label">Win Condition</label>
-          <select class="field-input" name="win_condition">
-            <option value="highest">Highest Score</option>
-            <option value="lowest">Lowest Score</option>
-            <option value="target">Target Score</option>
-            <option value="none">None</option>
-          </select>
-        </div>
-        <div class="field field--sm" id="targetField" style="display:none">
-          <label class="field-label">Target Score</label>
-          <input class="field-input" type="number" name="target_score" value="500" min="1" />
-        </div>
+    <div class="form-row-grid">
+      <div class="field" id="targetField" style="display:none;">
+        <label class="field-label">Target Score</label>
+        <input class="field-input" type="number" name="target_score" value="100" min="1" />
       </div>
-      <div class="form-row">
-        <div class="field field--sm">
-          <label class="field-label">Default Points</label>
-          <input class="field-input" type="number" name="default_points" value="10" min="1" />
-        </div>
-        <div class="field field--sm">
-          <label class="field-label">Allow Negatives</label>
-          <select class="field-input" name="allow_negatives">
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
-        </div>
-        <div class="field field--grow">
-          <label class="field-label">&nbsp;</label>
-          <button type="submit" class="btn btn--primary">Start Game →</button>
-        </div>
+      <div class="field field--sm">
+        <label class="field-label">Allow Negatives</label>
+        <select class="field-input" name="allow_negatives">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
       </div>
-    </form>
-  </div>
+      <div class="field field--sm" id="defaultPtsField">
+        <label class="field-label">Default Points</label>
+        <input class="field-input" type="number" name="default_points" value="1" min="1" />
+      </div>
+      <div class="field field--grow">
+        <label class="field-label">&nbsp;</label>
+        <button type="submit" class="btn btn--primary">Start Game →</button>
+      </div>
+    </div>
+  </form>
 </section>
 
 <!-- Recent Games -->
@@ -137,14 +118,14 @@
 {% block scripts %}
 <script>
 const GAMES = [
-  { name:'Rummy',      icon:'🃏', players:'2–6',  bg:'#f0ece4', desc:'Sequence & sets' },
-  { name:'Teen Patti', icon:'🂡', players:'3–6',  bg:'#e8f0ec', desc:'Indian poker' },
-  { name:'Poker',      icon:'♠️', players:'2–8',  bg:'#e8ecf0', desc:'Texas Hold\'em' },
-  { name:'Bluff',      icon:'🎭', players:'3–8',  bg:'#f0e8f0', desc:'Bluff your way' },
-  { name:'Hearts',     icon:'♥️', players:'3–6',  bg:'#f0e8e8', desc:'Avoid the hearts' },
-  { name:'Screw',      icon:'🔩', players:'2–6',  bg:'#eceae4', desc:'Pass the buck' },
-  { name:'UNO',        icon:'🌈', players:'2–10', bg:'#f0ece4', desc:'Color & number' },
-  { name:'Solitaire',  icon:'🃀', players:'1',    bg:'#ece8f0', desc:'Solo classic' },
+  { name:'Judgement', icon:'🃏', players:'3–8',  bg:'#e8f0ec', desc:'Predict your hands', winCondition:'highest', allowNeg:false },
+  { name:'Rummy',     icon:'🀄', players:'2–6',  bg:'#f0ece4', desc:'Sequence & sets',   winCondition:'lowest',  allowNeg:false },
+  { name:'Teen Patti',icon:'🂡', players:'3–6',  bg:'#e8f0ec', desc:'Indian poker',       winCondition:'highest', allowNeg:false },
+  { name:'Poker',     icon:'♠️', players:'2–8',  bg:'#e8ecf0', desc:'Texas Hold\'em',    winCondition:'highest', allowNeg:true  },
+  { name:'Bluff',     icon:'🎭', players:'3–8',  bg:'#f0e8f0', desc:'Bluff your way',    winCondition:'lowest',  allowNeg:false },
+  { name:'Hearts',    icon:'♥️', players:'3–6',  bg:'#f0e8e8', desc:'Avoid the hearts',  winCondition:'lowest',  allowNeg:false },
+  { name:'Screw',     icon:'🔩', players:'2–6',  bg:'#eceae4', desc:'Pass the buck',      winCondition:'highest', allowNeg:false },
+  { name:'UNO',       icon:'🌈', players:'2–10', bg:'#f0ece4', desc:'Color & number',     winCondition:'highest', allowNeg:false },
 ];
 
 let selectedGame = null;
@@ -157,7 +138,7 @@ function renderGames(list) {
   }
   grid.innerHTML = list.map(g => `
     <div class="game-tile${selectedGame === g.name ? ' game-tile--selected' : ''}"
-         onclick="selectGame('${g.name}','${g.icon}','${g.players}','${g.desc}')">
+         onclick="selectGame('${g.name}','${g.icon}','${g.players}','${g.desc}','${g.winCondition}','${g.allowNeg}')">
       <div class="game-tile__img" style="background:${g.bg}">${g.icon}</div>
       <div class="game-tile__name">${g.name}</div>
       <div class="game-tile__players">${g.players}p</div>
@@ -171,27 +152,49 @@ function filterGames() {
   ));
 }
 
-function selectGame(name, icon, players, desc) {
+function selectGame(name, icon, players, desc, winCondition, allowNeg) {
   selectedGame = name;
   document.getElementById('gameNameInp').value = name;
+
+  // Set win condition
+  const winSelect = document.getElementById('winCondSelect');
+  if (winSelect) winSelect.value = winCondition;
+
+  // Set allow negatives
+  const negSelect = document.querySelector('[name="allow_negatives"]');
+  if (negSelect) negSelect.value = allowNeg === 'true' ? 'true' : 'false';
+
+  // Hide default points for Judgement
+  const dpField = document.getElementById('defaultPtsField');
+  if (dpField) dpField.style.display = name.toLowerCase() === 'judgement' ? 'none' : '';
+
   filterGames();
 }
 
 // Win condition toggle
-document.querySelector('[name="win_condition"]').addEventListener('change', function() {
+document.getElementById('winCondSelect').addEventListener('change', function() {
   document.getElementById('targetField').style.display = this.value === 'target' ? 'flex' : 'none';
+});
+
+// Also hide default points when typing "judgement" manually
+document.getElementById('gameNameInp').addEventListener('input', function() {
+  const dpField = document.getElementById('defaultPtsField');
+  if (dpField) dpField.style.display = this.value.toLowerCase() === 'judgement' ? 'none' : '';
+  selectedGame = null;
+  filterGames();
 });
 
 // Form submit
 document.getElementById('createGameForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   const fd = new FormData(this);
+  const name = fd.get('name');
   const payload = {
-    name: fd.get('name'),
+    name,
     win_condition: fd.get('win_condition'),
     target_score: fd.get('target_score') || 0,
-    default_points: fd.get('default_points'),
     allow_negatives: fd.get('allow_negatives') === 'true',
+    default_points: name.toLowerCase() === 'judgement' ? 1 : (fd.get('default_points') || 1),
   };
   const res = await fetch('/api/games', {
     method: 'POST',
