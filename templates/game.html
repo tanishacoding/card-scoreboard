@@ -743,15 +743,15 @@ function openJudgementModal(round) {
   }
 
   // Set hukum banner
-  const hukum = getHukumForRound(round);
-  const banner = document.getElementById('jm-hukum-banner');
+  hukum = getHukumForRound(round);
+  banner = document.getElementById('jm-hukum-banner');
   if (banner) {
     banner.innerHTML = `<span class="hukum-emoji">${hukum.emoji}</span><span class="hukum-label">Hukum: <strong>${hukum.label}</strong></span>`;
     banner.style.color = hukum.color;
   }
 
-  const hukum = getHukumForRound(round);
-  const banner = document.getElementById('jm-hukum-banner');
+  hukum = getHukumForRound(round);
+  banner = document.getElementById('jm-hukum-banner');
   if (banner) {
     banner.innerHTML = `<span style="font-size:22px;">${hukum.emoji}</span><span class="hukum-text">Hukum this round: <strong>${hukum.label}</strong></span>`;
     banner.style.borderColor = hukum.label === 'No Hukum' ? '#ccc' : hukum.color;
