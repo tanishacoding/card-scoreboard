@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Scorekeeper — Home{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>your games</h1>
+  <p class="subtitle">pick an existing game or create a new one</p>
+</div>
+
+<div class="card">
+  <h2>create a new game</h2>
+  <form id="create-game-form">
+    <div class="form-row">
+      <label>game name</label>
+      <input type="text" id="g-name" placeholder="e.g. Teen Patti, Rummy..." required maxlength="100" />
+    </div>
+    <div class="form-row">
+      <label>win condition</label>
+      <select id="g-win">
+        <option value="highest">highest score wins</option>
+        <option value="lowest">lowest score wins</option>
+        <option value="target">first to reach target</option>
+        <option value="none">no win condition</option>
+      </select>
+    </div>
+    <div class="form-row" id="target-row" style="display:none;">
+      <label>target score</label>
+      <input type="number" id="g-target" value="100" min="1" />
+    </div>
+    <div class="form-row">
+      <label>default points per turn</label>
+      <input type="number" id="g-pts" value="1" min="1" />
+    </div>
+    <div class="form-row checkbox-row">
+      <label>allow negative scores</label>
+      <input type="checkbox" id="g-neg" checked />
+    </div>
+    <button type="submit" class="btn btn-primary">create game</button>
+  </form>
+</div>
+
+{% if games %}
+<div class="card">
+  <h2>saved games</h2>
+  <div class="games-list">
+    {% for game in games %}
+    <div class="game-item">
+      <div class="game-info">
+        <span class="game-name">{{ game.name }}</span>
+        <span class="game-meta">{{ game.players | length }} players · {{ game.win_condition }} wins</span>
+      </div>
+      <div class="game-actions">
+        <a href="/game/{{ game.id }}" class="btn btn-sm">open</a>
+        <button class="btn btn-sm btn-danger" onclick="deleteGame({{ game.id }}, this)">delete</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('g-win').addEventListener('change', function() {
+    document.getElementById('target-row').style.display = this.value === 'target' ? 'flex' : 'none';
+  });
+
+  document.getElementById('create-game-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const res = await fetch('/api/games', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        name: document.getElementById('g-name').value.trim(),
+        win_condition: document.getElementById('g-win').value,
+        target_score: document.getElementById('g-target').value,
+        default_points: document.getElementById('g-pts').value,
+        allow_negatives: document.getElementById('g-neg').checked,
+      })
+    });
+    const game = await res.json();
+    window.location.href = `/game/${game.id}`;
+  });
+
+  async function deleteGame(id, btn) {
+    if (!confirm('delete this game and all its scores?')) return;
+    await fetch(`/api/games/${id}`, {method: 'DELETE'});
+    btn.closest('.game-item').remove();
+  }
+</script>
+{% endblock %}
