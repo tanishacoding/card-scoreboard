@@ -30,7 +30,6 @@
       <span class="meta-chip" id="playerCountChip">{{ game.players | length }} player{{ 's' if game.players | length != 1 }}</span>
       <span class="meta-chip" id="timerChip">⏱ 0:00</span>
       <span class="meta-chip" id="hukumChip">♠️ Spade</span>
-      <span class="meta-chip" id="hukumChip">♠️ Spade</span>
     </div>
   </div>
   <div class="game-actions">
@@ -529,8 +528,7 @@ async function nextRound() {
     hukumChip.style.color = h.color;
   }
   const hukumChip = document.getElementById('hukumChip');
-  if (hukumChip) { const h = getHukumForRound(data.round); hukumChip.textContent = h.emoji + ' ' + h.label; hukumChip.style.color = h.color; }
-  if (IS_JUDGEMENT) {
+  if (hukumChip) { h = getHukumForRound(data.round); hukumChip.textContent = h.emoji + ' ' + h.label; hukumChip.style.color = h.color; }  if (IS_JUDGEMENT) {
     // Open predictions for the NEW round
     openJudgementModal(data.round);
   } else {
