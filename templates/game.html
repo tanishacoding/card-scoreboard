@@ -701,7 +701,6 @@ function openJudgementModal(round) {
   const playerOptions = players.map(p => `<option value="${p.id}" ${p.id == currentDealerId ? 'selected' : ''}>${p.name}</option>`).join('');
   body.innerHTML = `
     <div class="jm-hukum-banner" id="jm-hukum-banner"></div>
-    <div class="jm-hukum-banner" id="jm-hukum-banner"></div>
     <div class="jm-top-row">
       <div class="jm-field"><label>Cards distributed</label><input type="number" id="cards-distributed" min="1" max="52" value="${getCardsForRound(round)}" class="jm-input" /></div>
       <div class="jm-field"><label>Dealer this round</label><select id="dealer-select" class="jm-select">${playerOptions}</select></div>
@@ -750,12 +749,6 @@ function openJudgementModal(round) {
     banner.style.color = hukum.color;
   }
 
-  hukum = getHukumForRound(round);
-  banner = document.getElementById('jm-hukum-banner');
-  if (banner) {
-    banner.innerHTML = `<span style="font-size:22px;">${hukum.emoji}</span><span class="hukum-text">Hukum this round: <strong>${hukum.label}</strong></span>`;
-    banner.style.borderColor = hukum.label === 'No Hukum' ? '#ccc' : hukum.color;
-  }
   document.getElementById('dealer-select').addEventListener('change', () => { currentDealerId = document.getElementById('dealer-select').value; renderRows(); });
   renderRows();
   modal.style.display = 'flex';
