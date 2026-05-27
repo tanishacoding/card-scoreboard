@@ -42,7 +42,7 @@ class Player(db.Model):
             'id': self.id,
             'name': self.name,
             'score': self.score,
-            'history': [e.to_dict() for e in list(self.score_entries)[-5:]],
+            'history': [e.to_dict() for e in self.score_entries[-5:]],
         }
 
 
