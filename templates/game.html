@@ -741,8 +741,8 @@ function openJudgementModal(round) {
   }
 
   // Set hukum banner
-  hukum = getHukumForRound(round);
-  banner = document.getElementById('jm-hukum-banner');
+  let hukum = getHukumForRound(round);
+  let banner = document.getElementById('jm-hukum-banner');
   if (banner) {
     banner.innerHTML = `<span class="hukum-emoji">${hukum.emoji}</span><span class="hukum-label">Hukum: <strong>${hukum.label}</strong></span>`;
     banner.style.color = hukum.color;
