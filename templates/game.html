@@ -222,6 +222,7 @@ const TARGET = parseInt(gameEl.dataset.target);
 const DEFAULT_PTS = parseInt(gameEl.dataset.defaultPoints);
 const ALLOW_NEG = gameEl.dataset.allowNegatives === 'true';
 const IS_JUDGEMENT = gameEl.dataset.isJudgement === 'true';
+let roundSubmitted = !IS_JUDGEMENT;
 
 // ── Starting cards ─────────────────────────────────────────
 function getCardsForRound(round) {
@@ -514,6 +515,11 @@ document.querySelectorAll('.player-row').forEach(initDragForRow);
 
 // ── Round & Reset ──────────────────────────────────────────
 async function nextRound() {
+  if (IS_JUDGEMENT && !roundSubmitted) {
+    alert('Please enter predictions & results before moving to the next round.');
+    return;
+  }
+  roundSubmitted = false;
   getPlayers().forEach(p => { lastRoundScores[p.id] = p.score; });
   const res = await fetch(`/api/games/${GAME_ID}/next-round`, { method: 'POST' });
   const data = await res.json();
@@ -768,6 +774,7 @@ async function submitJudgement() {
     const result = await postScore(p.id, pts);
     updatePlayerUI(result);
   }
+  roundSubmitted = true;
   closeJudgementModal();
   // Show round summary after Judgement scores
   setTimeout(() => showJudgementSummary(roundNum, players, roundScoresBefore), 300);
