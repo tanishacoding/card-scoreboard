@@ -58,8 +58,9 @@ function setStartingCards() {
     <button class="btn btn--primary btn--sm" onclick="setStartingCards()">Set</button>
   </div>
 </div>
-<button class="judgement-cta" id="judgementCta" onclick="openJudgementModal(parseInt(document.getElementById('ctaRound').textContent))" style="display:none;"></button>
-<div class="judgement-info-card">
+<button class="judgement-cta" id="judgementCta" onclick="openJudgementModal(parseInt(document.getElementById('ctaRound').textContent))" style="display:none;">
+  🃏 Enter Round <span id="ctaRound">1</span> Predictions & Results
+</button><div class="judgement-info-card">
   <div class="ji-title">🃏 Judgement scoring</div>
   <div class="ji-pills">
     <span class="ji-pill">0 hands → +10 pts</span>
